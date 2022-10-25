@@ -1,6 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 from base import BaseModel
+import timm
 
 
 class MnistModel(BaseModel):
@@ -19,4 +20,14 @@ class MnistModel(BaseModel):
         x = F.relu(self.fc1(x))
         x = F.dropout(x, training=self.training)
         x = self.fc2(x)
+        return F.log_softmax(x, dim=1)
+
+
+class Res18(BaseModel):
+    def __init__(self):
+        super().__init__()
+        self.res18 = timm.create_model("resnet18d", pretrained=True, num_classes=18)
+
+    def forward(self, x):
+        x = self.res18(x)
         return F.log_softmax(x, dim=1)
