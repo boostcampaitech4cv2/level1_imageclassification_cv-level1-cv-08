@@ -1,6 +1,6 @@
 from torchvision import datasets, transforms
 from base import BaseDataLoader
-from data_loader.data_set import TrainDataset
+from data_loader.data_set import TrainDataset, TestDataset
 
 
 class MnistDataLoader(BaseDataLoader):
@@ -43,6 +43,25 @@ class TrainLoader(BaseDataLoader):
         trsfm = transforms.Compose([transforms.ToTensor()])
         self.data_dir = data_dir
         self.dataset = TrainDataset(self.data_dir, transform=trsfm)
+        super().__init__(
+            self.dataset, batch_size, shuffle, validation_split, num_workers
+        )
+
+
+class TestLoader(BaseDataLoader):
+    """ """
+
+    def __init__(
+        self,
+        data_dir,
+        batch_size,
+        shuffle=True,
+        validation_split=0.0,
+        num_workers=1,
+    ):
+        trsfm = transforms.Compose([transforms.ToTensor()])
+        self.data_dir = data_dir
+        self.dataset = TestDataset(self.data_dir, transform=trsfm)
         super().__init__(
             self.dataset, batch_size, shuffle, validation_split, num_workers
         )

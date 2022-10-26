@@ -1,17 +1,17 @@
 {
-    "name": "Mnist_LeNet",
+    "name": "base_res",
     "n_gpu": 1,
     "arch": {
         "type": "Res18",
         "args": {}
     },
     "data_loader": {
-        "type": "TrainLoader",
+        "type": "TestLoader",
         "args": {
-            "data_dir": "/opt/ml/level1_imageclassification_cv-level1-cv-08/data_loader/data/train/",
+            "data_dir": "/opt/ml/level1_imageclassification_cv-level1-cv-08/data_loader/data/eval/",
             "batch_size": 128,
             "shuffle": true,
-            "validation_split": 0.1,
+            "validation_split": 0.0,
             "num_workers": 2
         }
     },
@@ -42,6 +42,6 @@
         "verbosity": 2,
         "monitor": "min val_loss",
         "early_stop": 10,
-        "tensorboard": true
+        "tensorboard": false
     }
 }

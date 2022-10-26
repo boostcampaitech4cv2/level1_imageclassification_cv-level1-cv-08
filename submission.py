@@ -6,6 +6,7 @@ import model.loss as module_loss
 import model.metric as module_metric
 import model.model as module_arch
 from parse_config import ConfigParser
+import pandas as pd
 
 
 def main(config):
@@ -22,13 +23,6 @@ def main(config):
 
     # build model architecture
     model = config.init_obj("arch", module_arch)
-    logger.info(model)
-
-    # get function handles of loss and metrics
-    loss_fn = getattr(module_loss, config["loss"])
-    metric_fns = [getattr(module_metric, met) for met in config["metrics"]]
-
-    logger.info("Loading checkpoint: {} ...".format(config.resume))
     checkpoint = torch.load(config.resume)
     state_dict = checkpoint["state_dict"]
     if config["n_gpu"] > 1:
@@ -40,34 +34,15 @@ def main(config):
     model = model.to(device)
     model.eval()
 
-    total_loss = 0.0
-    total_metrics = torch.zeros(len(metric_fns))
-
+    result = []
     with torch.no_grad():
-        for i, (data, target) in enumerate(tqdm(data_loader)):
-            data, target = data.to(device), target.to(device)
-            output = model(data)
-
-            #
-            # save sample images, or do something with output here
-            #
-
-            # computing loss, metrics on test set
-            loss = loss_fn(output, target)
-            batch_size = data.shape[0]
-            total_loss += loss.item() * batch_size
-            for i, metric in enumerate(metric_fns):
-                total_metrics[i] += metric(output, target) * batch_size
-
-    n_samples = len(data_loader.sampler)
-    log = {"loss": total_loss / n_samples}
-    log.update(
-        {
-            met.__name__: total_metrics[i].item() / n_samples
-            for i, met in enumerate(metric_fns)
-        }
-    )
-    logger.info(log)
+        for data in tqdm(data_loader):
+            data = data.to(device)
+            ouput = model(data).data.max(1, keepdim=True)[1]
+            result += list(map(lambda x: int(x), ouput))
+    info_csv = pd.read_csv(config["data_loader"]["args"]["data_dir"] + "/info.csv")
+    info_csv["ans"] = result
+    info_csv.to_csv("/opt/ml/level1_imageclassification_cv-level1-cv-08/submision.csv")
 
 
 if __name__ == "__main__":
