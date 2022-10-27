@@ -1,7 +1,7 @@
-import torch
 from abc import abstractmethod
 from numpy import inf
 from logger import TensorboardWriter
+import torch
 
 
 class BaseTrainer:
@@ -64,23 +64,17 @@ class BaseTrainer:
         for epoch in range(self.start_epoch, self.epochs + 1):
             result = self._train_epoch(epoch)
 
-            # save logged informations into log dict
-            log = {"epoch": epoch}
-            log.update(result)
-
-            # print logged informations to the screen
-            for key, value in log.items():
-                self.logger.info(f"    {str(key):15s}: {value}")
-
             # evaluate model performance according to configured metric, save best checkpoint as model_best
             best = False
             if self.mnt_mode != "off":
                 try:
                     # check whether model performance improved or not, according to specified metric(mnt_metric)
                     improved = (
-                        self.mnt_mode == "min" and log[self.mnt_metric] <= self.mnt_best
+                        self.mnt_mode == "min"
+                        and result[self.mnt_metric] <= self.mnt_best
                     ) or (
-                        self.mnt_mode == "max" and log[self.mnt_metric] >= self.mnt_best
+                        self.mnt_mode == "max"
+                        and result[self.mnt_metric] >= self.mnt_best
                     )
                 except KeyError:
                     self.logger.warning(
@@ -91,7 +85,7 @@ class BaseTrainer:
                     improved = False
 
                 if improved:
-                    self.mnt_best = log[self.mnt_metric]
+                    self.mnt_best = result[self.mnt_metric]
                     not_improved_count = 0
                     best = True
                 else:
