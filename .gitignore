@@ -242,3 +242,5 @@ requirements.txt
 *.yaml
 /wandb
 .vscode
+config.json
+trainer/custom_trainer.py
