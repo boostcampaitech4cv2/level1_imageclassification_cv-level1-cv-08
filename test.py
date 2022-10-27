@@ -2,6 +2,7 @@ import argparse
 import collections
 from datetime import datetime
 import torch
+import os
 from tqdm import tqdm
 import pandas as pd
 import data_loader.data_loaders as module_data
@@ -22,7 +23,7 @@ def main(CONFIG):
 
     # build model architecture
     model = CONFIG.init_obj("arch", module_arch)
-    logger.info(model)
+    logger.info(CONFIG["arch"]["args"]["model_name"])
 
     logger.info(f"Loading checkpoint: {CONFIG.resume} ...")
     checkpoint = torch.load(CONFIG.resume)
@@ -30,15 +31,21 @@ def main(CONFIG):
     if CONFIG["n_gpu"] > 1:
         model = torch.nn.DataParallel(model)
     model.load_state_dict(state_dict)
-    print("model loaded")
+    logger.info("model loaded")
 
     # prepare model for testing
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
     model.eval()
-    print("Testing...")
+    logger.info("Testing...")
     preds = []
-    progress = tqdm(data_loader, total=len(data_loader), desc="Testing... ", ncols=200)
+    progress = tqdm(
+        data_loader,
+        total=len(data_loader),
+        desc="Testing... ",
+        ncols="80%",
+        dynamic_ncols=True,
+    )
     with torch.no_grad():
         for data in progress:
             data = data.to(device)
@@ -49,14 +56,17 @@ def main(CONFIG):
             #
             # save sample images, or do something with output here
             #
-    print("Testing done.")
+    logger.info("Testing done.")
 
-    submit = pd.read_csv("/opt/ml/input/data/eval/info.csv")
+    info_path = os.path.join(CONFIG["info_dir"], "info.csv")
+    submit = pd.read_csv(info_path)
     submit["ans"] = preds
+
     now = datetime.now().strftime(r"%m.%d_%H:%M:%S")
-    path_submit = f"/opt/ml/level1_imageclassification_cv-level1-cv-08/submit/{now}.csv"
-    submit.to_csv(path_submit, index=False)
-    print(f"Submit saved to {path_submit}")
+    submit_path = os.path.join(CONFIG["submit_dir"], f"{now}.csv")
+    submit.to_csv(submit_path, index=False)
+
+    logger.info(f"Submit saved to {submit_path}")
 
 
 if __name__ == "__main__":
@@ -71,7 +81,7 @@ if __name__ == "__main__":
     args.add_argument(
         "-r",
         "--resume",
-        default="saved/models/Mask_base/1026_172102/model_best.pth",
+        default="/opt/ml/level1_imageclassification_cv-level1-cv-08/saved/models/Mask_base/10.27_01:26:26/model_best.pth",
         type=str,
         help="path to latest checkpoint (default: None)",
     )

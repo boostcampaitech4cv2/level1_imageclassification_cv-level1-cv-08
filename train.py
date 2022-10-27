@@ -2,8 +2,8 @@ import argparse
 import collections
 import torch
 import numpy as np
-import wandb
 import albumentations as A
+import wandb
 
 import data_loader.data_loaders as module_data
 import model.loss as module_loss
@@ -13,7 +13,7 @@ from trainer import Trainer
 from utils import prepare_device
 
 # fix random seeds for reproducibility
-SEED = 123
+SEED = 42
 torch.manual_seed(SEED)
 torch.cuda.manual_seed(SEED)
 torch.backends.cudnn.deterministic = True
@@ -55,32 +55,33 @@ def main(CONFIG):
         valid_data_loader=valid_data_loader,
         lr_scheduler=lr_scheduler,
     )
-    wandb.init(project="bcaitech4_mask_detection")
-    wandb.config = {
-        "lr": CONFIG["optimizer"]["args"]["lr"],
-        "epochs": CONFIG["trainer"]["epochs"],
-        "batch_size": CONFIG["data_loader"]["args"]["batch_size"],
-    }
-    wandb.run.name = (
-        CONFIG["arch"]["args"]["model_name"]
-        + "_"
-        + str(CONFIG["data_loader"]["args"]["batch_size"])
-        + "_"
-        + str(CONFIG["lr_scheduler"]["type"])
-    )
-    wandb.run.save()
-    # save data augmentation
-    A.save(
-        data_loader.dataset.transform,
-        CONFIG.save_dir / "trn_trnsfrm.yml",
-        data_format="yaml",
-    )
-    A.save(
-        valid_data_loader.dataset.transform,
-        CONFIG.save_dir / "vld_trnsfrm.yml",
-        data_format="yaml",
-    )
-    wandb.save(str(CONFIG.save_dir / "*_trnsfrm.yml"))
+    if CONFIG["wandb"]:
+        wandb.init(project="bcaitech4_mask_detection")
+        wandb.config = {
+            "lr": CONFIG["optimizer"]["args"]["lr"],
+            "epochs": CONFIG["trainer"]["epochs"],
+            "batch_size": CONFIG["data_loader"]["args"]["batch_size"],
+        }
+        wandb.run.name = (
+            CONFIG["arch"]["args"]["model_name"]
+            + "_"
+            + str(CONFIG["data_loader"]["args"]["batch_size"])
+            + "_"
+            + str(CONFIG["lr_scheduler"]["type"])
+        )
+        wandb.run.save()
+        # save data augmentation
+        A.save(
+            data_loader.dataset.transform,
+            CONFIG.save_dir / "trn_trnsfrm.yml",
+            data_format="yaml",
+        )
+        A.save(
+            valid_data_loader.dataset.transform,
+            CONFIG.save_dir / "vld_trnsfrm.yml",
+            data_format="yaml",
+        )
+        wandb.save(str(CONFIG.save_dir / "*_trnsfrm.yml"))
 
     trainer.train()
 
@@ -118,6 +119,9 @@ if __name__ == "__main__":
         ),
         CustomArgs(
             ["--arch", "--architecture"], type=str, target="arch;args;model_name"
+        ),
+        CustomArgs(
+            ["--model", "--model_framework"], type=str, target="arch;type"
         ),
     ]
     config = ConfigParser.from_args(args, options)
