@@ -1,11 +1,11 @@
 import numpy as np
 import torch
-from torchmetrics import Accuracy, F1Score
+from torchmetrics.classification import MulticlassAccuracy, MulticlassF1Score
 from torchvision.utils import make_grid
 from tqdm import tqdm
 import wandb
 from base import BaseTrainer
-from utils import inf_loop, MetricTracker
+from utils import inf_loop
 
 
 class Trainer(BaseTrainer):
@@ -39,21 +39,11 @@ class Trainer(BaseTrainer):
         self.valid_data_loader = valid_data_loader
         self.do_validation = self.valid_data_loader is not None
         self.lr_scheduler = lr_scheduler
-        self.log_step = int(np.sqrt(data_loader.batch_size)) * 2
 
-        self.train_metrics = MetricTracker(
-            "train/loss",
-            writer=self.writer,
-        )
-
-        self.valid_metrics = MetricTracker(
-            "val/loss",
-            writer=self.writer,
-        )
-        self.train_acc = Accuracy().to(device)
-        self.valid_acc = Accuracy().to(device)
-        self.train_f1 = F1Score(avergage="macro", num_classes=18).to(device)
-        self.valid_f1 = F1Score(average="macro", num_classes=18).to(device)
+        self.train_acc = MulticlassAccuracy(num_classes=18).to(device)
+        self.valid_acc = MulticlassAccuracy(num_classes=18).to(device)
+        self.train_f1 = MulticlassF1Score(num_classes=18,average='macro').to(device)
+        self.valid_f1 = MulticlassF1Score(num_classes=18,average='macro').to(device)
 
     def _train_epoch(self, epoch):
         """
@@ -63,52 +53,56 @@ class Trainer(BaseTrainer):
         :return: A log that contains average loss and metric in this epoch.
         """
         self.model.train()
-        self.train_metrics.reset()
         progress = tqdm(
             self.data_loader,
             total=len(self.data_loader),
             desc=f"Epoch {epoch:2d} {'Train...':<12} ",
-            ncols=200,
+            ncols="80%",
+            dynamic_ncols=True,
+            ascii=True,
         )
+        train_total_loss = 0
         for batch_idx, (data, target) in enumerate(progress):
-            data, target = data.to(self.device), target.to(self.device)
+            data, label = data.to(self.device), target[0].to(self.device)
 
             self.optimizer.zero_grad()
             output = self.model(data)
             pred = torch.argmax(output, dim=1)
 
-            acc = self.train_acc(pred, target)
-            f1 = self.train_f1(pred, target)
+            acc = self.train_acc(pred, label)
+            f1 = self.train_f1(pred, label)
 
-            loss = self.criterion(output, target)
+            loss = self.criterion(output, label)
             loss.backward()
             self.optimizer.step()
 
-            self.train_metrics.update("train/loss", loss.item())
+            train_total_loss += loss.item()
             progress.set_postfix(Loss=loss.item(), Acc=acc.item(), F1=f1.item())
             if batch_idx == self.len_epoch:
                 break
-        log = self.train_metrics.result()
+        train_total_loss /= len(self.data_loader)
         wandb.log(
             {
-                "train/acc": self.train_acc.compute(),
-                "train/f1": self.train_f1.compute(),
-                "train/loss": log["train/loss"],
+                "train/acc": (train_total_acc := self.train_acc.compute()),
+                "train/f1": (train_total_f1 := self.train_f1.compute()),
+                "train/loss": train_total_loss,
                 "Epoch": epoch,
                 "Learning Rate": self.optimizer.param_groups[0]["lr"],
             }
+        )
+        self.logger.info(
+            f"Epoch {epoch:2d} Train... Loss: {train_total_loss:.4f}// Acc: {train_total_acc:.4f}// F1: {train_total_f1:.4f}"
         )
         self.train_acc.reset()
         self.train_f1.reset()
 
         if self.do_validation:
-            val_log = self._valid_epoch(epoch)
-            log.update(**{f"{k}": v for k, v in val_log.items()})
+            valid_total_loss = self._valid_epoch(epoch)
 
         if self.lr_scheduler is not None:
             self.lr_scheduler.step()
 
-        return log
+        return {"train/loss": train_total_loss, "val/loss": valid_total_loss}
 
     def _valid_epoch(self, epoch):
         """
@@ -118,55 +112,42 @@ class Trainer(BaseTrainer):
         :return: A log that contains information about validation
         """
         self.model.eval()
-        self.valid_metrics.reset()
         progress = tqdm(
             self.valid_data_loader,
             total=len(self.valid_data_loader),
             desc=f"Epoch {epoch:2d} {'Valid...':<12} ",
-            ncols=200,
+            ncols="80%",
+            dynamic_ncols=True,
+            ascii=True,
         )
+        valid_total_loss = 0
         with torch.no_grad():
-            for batch_idx, (data, target) in enumerate(progress):
-                data, target = data.to(self.device), target.to(self.device)
+            for data, target in progress:
+                # target[0]: label, target[1]: mask, target[2]: gender, target[3]: age
+                data, label = data.to(self.device), target[0].to(self.device)
 
                 output = self.model(data)
                 pred = torch.argmax(output, dim=1)
 
-                acc = self.valid_acc(pred, target)
-                f1 = self.valid_f1(pred, target)
+                acc = self.valid_acc(pred, label)
+                f1 = self.valid_f1(pred, label)
 
-                loss = self.criterion(output, target)
-                self.valid_metrics.update("val/loss", loss.item())
+                loss = self.criterion(output, label)
+                valid_total_loss += loss.item()
                 progress.set_postfix(Loss=loss.item(), Acc=acc.item(), F1=f1.item())
+        valid_total_loss /= len(self.valid_data_loader)
 
         wandb.log(
             {
-                "valid/acc": self.valid_acc.compute(),
-                "valid/f1": self.valid_f1.compute(),
-                "valid/loss": self.valid_metrics.result()["val/loss"],
+                "valid/acc": (valid_total_acc := self.valid_acc.compute()),
+                "valid/f1": (valid_total_f1 := self.valid_f1.compute()),
+                "valid/loss": valid_total_loss,
             }
         )
         self.valid_acc.reset()
         self.valid_f1.reset()
+        self.logger.info(
+            f"Epoch {epoch:2d} Valid... Loss: {valid_total_loss:.4f}// Acc: {valid_total_acc:.4f}// F1: {valid_total_f1:.4f}"
+        )
 
-        return self.valid_metrics.result()
-
-    def _progress(self, batch_idx, train=True):
-        if train:
-            if hasattr(self.data_loader, "n_samples"):
-                current = batch_idx * self.data_loader.batch_size
-                total = self.data_loader.n_samples
-            else:
-                current = batch_idx + 1
-                total = self.len_epoch
-
-            return f"[{current}/{total} ({100.0 * current / total:.0f}%)]"
-
-        if hasattr(self.valid_data_loader, "n_samples"):
-            current = batch_idx * self.valid_data_loader.batch_size
-            total = self.valid_data_loader.n_samples
-        else:
-            current = batch_idx + 1
-            total = len(self.valid_data_loader)
-
-        return f"[{current}/{total} ({100.0 * current / total:.0f}%)]"
+        return valid_total_loss
