@@ -23,11 +23,11 @@ def main(config):
 
     # build model architecture
     model = config.init_obj("arch", module_arch)
-    checkpoint = torch.load(config.resume)
-    state_dict = checkpoint["state_dict"]
+    # checkpoint = torch.load(config.resume)
+    # state_dict = checkpoint["state_dict"]
     if config["n_gpu"] > 1:
         model = torch.nn.DataParallel(model)
-    model.load_state_dict(state_dict)
+    # model.load_state_dict(state_dict)
 
     # prepare model for testing
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -38,8 +38,13 @@ def main(config):
     with torch.no_grad():
         for data in tqdm(data_loader):
             data = data.to(device)
-            ouput = model(data).data.max(1, keepdim=True)[1]
-            result += list(map(lambda x: int(x), ouput))
+            mask_out, gender_out, age_out = model(data)
+            output = (
+                mask_out.data.max(1, keepdim=True)[1] * 6
+                + gender_out.data.max(1, keepdim=True)[1] * 2
+                + age_out.data.max(1, keepdim=True)[1]
+            )
+            result += list(map(lambda x: int(x), output))
     info_csv = pd.read_csv(config["data_loader"]["args"]["data_dir"] + "/info.csv")
     info_csv["ans"] = result
     info_csv.to_csv("/opt/ml/level1_imageclassification_cv-level1-cv-08/submision.csv")

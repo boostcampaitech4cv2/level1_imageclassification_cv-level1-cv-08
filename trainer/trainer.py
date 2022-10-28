@@ -55,6 +55,8 @@ class Trainer(BaseTrainer):
         """
         self.model.train()
         self.train_metrics.reset()
+        torch.autograd.set_detect_anomaly(True)
+
         for batch_idx, (data, target) in enumerate(self.data_loader):
             data, target = data.to(self.device), target.to(self.device)
 

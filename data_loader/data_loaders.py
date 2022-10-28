@@ -40,7 +40,16 @@ class TrainLoader(BaseDataLoader):
         validation_split=0.0,
         num_workers=1,
     ):
-        trsfm = transforms.Compose([transforms.ToTensor()])
+        trsfm = transforms.Compose(
+            [
+                transforms.Resize((224, 224)),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    (0.48145466, 0.4578275, 0.40821073),
+                    (0.26862954, 0.26130258, 0.27577711),
+                ),
+            ]
+        )
         self.data_dir = data_dir
         self.dataset = TrainDataset(self.data_dir, transform=trsfm)
         super().__init__(
@@ -59,7 +68,16 @@ class TestLoader(BaseDataLoader):
         validation_split=0.0,
         num_workers=1,
     ):
-        trsfm = transforms.Compose([transforms.ToTensor()])
+        trsfm = transforms.Compose(
+            [
+                transforms.Resize((224, 224)),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    (0.48145466, 0.4578275, 0.40821073),
+                    (0.26862954, 0.26130258, 0.27577711),
+                ),
+            ]
+        )
         self.data_dir = data_dir
         self.dataset = TestDataset(self.data_dir, transform=trsfm)
         super().__init__(

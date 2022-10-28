@@ -1,32 +1,31 @@
 {
-    "name": "base_res",
+    "name": "ClibGh_test",
     "n_gpu": 1,
     "arch": {
-        "type": "Res18",
+        "type": "ClibGh",
         "args": {}
     },
     "data_loader": {
-        "type": "TestLoader",
+        "type": "TrainLoader",
         "args": {
-            "data_dir": "/opt/ml/level1_imageclassification_cv-level1-cv-08/data_loader/data/eval/",
+            "data_dir": "/opt/ml/level1_imageclassification_cv-level1-cv-08/data_loader/data/train/",
             "batch_size": 128,
             "shuffle": true,
-            "validation_split": 0.0,
+            "validation_split": 0.1,
             "num_workers": 2
         }
     },
     "optimizer": {
         "type": "Adam",
         "args": {
-            "lr": 0.001,
+            "lr": 0.0001,
             "weight_decay": 0,
             "amsgrad": true
         }
     },
-    "loss": "nll_loss",
+    "loss": "ClibGh_loss",
     "metrics": [
-        "accuracy",
-        "top_k_acc"
+        "accuracy"
     ],
     "lr_scheduler": {
         "type": "StepLR",

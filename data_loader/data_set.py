@@ -47,7 +47,7 @@ class TrainDataset(Dataset):
         self.train_csv = train_csv[["path", "id", "gender", "age", "mask"]]
         self.data = [Image.open(path + "images/" + path2) for path2 in train_csv.path]
         self.target = [
-            mask * 6 + gender * 2 + age
+            np.array([mask, gender, age])
             for mask, gender, age in train_csv[["mask", "gender", "age"]].iloc
         ]
 
