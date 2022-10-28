@@ -4,7 +4,7 @@ python train.py --c cfg/efficient.json
 
 SUBMIT :
 example) 
-python submit.py --c cfg/efficient.json --r saved/models/efficent/1027_011536/model_best.pth --n eff_22_fin
-
-./cfg : json files for config
+python submit.py --c cfg/efficient.json --r saved/models/efficent/1027_011536/model_best.pth --n eff_22_fin<br>
+<br>
+./cfg : json files for config<br>
 ./visual : visualization for submit
