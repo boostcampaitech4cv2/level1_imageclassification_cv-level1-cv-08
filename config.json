@@ -1,54 +1,50 @@
 {
-    "name": "TestModel",
+    "name": "Mask_base",
     "n_gpu": 1,
-
     "arch": {
-        "type": "MyModel",
-        "args": {}
+        "type": "TimmModel",
+        "args": {
+            "model_name": "efficientnetv2_rw_s",
+            "pretrained": true,
+            "num_classes": 18
+        }
     },
     "data_loader": {
-        "type": "MaskDataLoader",
-        "args":{
-            "type": "MyDataset",
-            "args": {
-                "data_dir": "input/data/train/images",
-                "train": true,
-                "transform": {"type": "BasicTransform", "args": {}}
-            },
+        "type": "setup",
+        "args": {
+            "stage": "train",
+            "input_size": 288,
             "batch_size": 64,
-            "shuffle": true,
-            "num_workers": 2
+            "num_workers": 4
         }
     },
     "optimizer": {
         "type": "Adam",
-        "args":{
+        "args": {
             "lr": 0.001,
             "weight_decay": 0,
             "amsgrad": true
         }
     },
-    "loss": "nll_loss",
-    "metrics": [
-        "accuracy", "top_k_acc"
-    ],
+    "loss": "ce_loss",
+    "metrics": [],
     "lr_scheduler": {
         "type": "StepLR",
         "args": {
-            "step_size": 50,
+            "step_size": 10,
             "gamma": 0.1
         }
     },
     "trainer": {
         "epochs": 100,
-
         "save_dir": "saved/",
         "save_period": 1,
         "verbosity": 2,
-        
-        "monitor": "min val_loss",
+        "monitor": "min val/loss",
         "early_stop": 10,
-
         "tensorboard": false
-    }
+    },
+    "wandb": true,
+    "submit_dir": "/opt/ml/level1_imageclassification_cv-level1-cv-08/submit",
+    "info_dir": "/opt/ml/input/data/eval"
 }

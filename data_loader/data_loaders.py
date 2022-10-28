@@ -1,36 +1,158 @@
-from torchvision import datasets, transforms
-from . import dataset as ds
-from torch.utils.data import DataLoader
-from . import transformer as T
+import re
+from glob import glob
+from torch.utils.data import DataLoader, Dataset
+import albumentations as A
+from albumentations.core.composition import Compose
+from albumentations.pytorch import ToTensorV2
+import multiprocessing
+import cv2
+from sklearn.model_selection import train_test_split
+
+
+class CustomDataset(Dataset):
+    def __init__(self, dataset, test=False, transform=None):
+        self.pair_list = dataset
+        self.transform = transform
+        self.test = test
+
+    def __len__(self):
+        return len(self.pair_list)
+
+    def __getitem__(self, idx):
+        pair = self.pair_list[idx]
+        image = cv2.imread(pair) if self.test else cv2.imread(pair[0])
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+        if self.transform:
+            image = self.transform(image=image)
+
+        return image["image"] if self.test else (image["image"], pair[1])
+
+
+def prepare_dataset(files):
+    labels = []
+    for file in files:
+        name, mask = re.search("_(.+?)[.]", file)[1].split("/")
+        mask = re.sub("[0-9]", "", mask)
+        gender, _, age = name.split("_")
+
+        if mask == "mask":
+            mask = 0
+        elif mask == "incorrect_mask":
+            mask = 1
+        elif mask == "normal":
+            mask = 2
+        else:
+            raise ValueError(f"Invalid mask type {mask}")
+
+        if gender == "male":
+            gender = 0
+        elif gender == "female":
+            gender = 1
+        else:
+            raise ValueError(f"Invalid gender type {gender}")
+
+        if (age := int(age)) < 30:
+            age = 0
+        elif age < 60:
+            age = 1
+        elif age >= 60:
+            age = 2
+        else:
+            raise ValueError(f"Invalid age {age}")
+
+        label = mask * 6 + gender * 3 + age
+
+        labels.append([label, mask, gender, age])
+    return list(zip(files, labels))
+
+
+def make_dataset(stage="train"):
+    path = f"/opt/ml/input/data/{stage}/images"
+    if stage == "train":
+        files = glob(f"{path}/*/*.jpg")
+        files += glob(f"{path}/*/*.jpeg")
+        files += glob(f"{path}/*/*.png")
+        assert len(files) == 18900, "All dataset is not complete"
+        files = prepare_dataset(files)
+
+        train_set, valid_set = train_test_split(
+            files, test_size=0.2, random_state=42, shuffle=True
+        )
+        print(f"train dataset size : {len(train_set)}")
+        print(f"valid dataset size : {len(valid_set)}")
+
+        return train_set, valid_set
+    if stage == "eval":
+        files = glob(f"{path}/*.jpg")
+        assert len(files) == 12600, "Whole dataset is not complete"
+
+        return files
+
+
+def setup(
+    stage="train",
+    input_size=224,
+    batch_size=32,
+    num_workers=4,
+):
+    train_transform = Compose(
+        [
+            # A.CenterCrop(356, 356, p=0.5),
+            # A.Affine(),
+            A.Resize(input_size, input_size),
+            A.HorizontalFlip(p=0.5),
+            A.Normalize(),
+            ToTensorV2(),
+        ]
+    )
+    test_transform = Compose(
+        [
+            A.Resize(input_size, input_size),
+            A.Normalize(),
+            ToTensorV2(),
+        ]
+    )
+
+    if stage == "train":
+        print("train dataset loading")
+        train_set, valid_set = make_dataset(stage)
+
+        train_set = CustomDataset(train_set, transform=train_transform)
+        valid_set = CustomDataset(valid_set, transform=test_transform)
+
+        train_dataloader = DataLoader(
+            train_set,
+            batch_size,
+            shuffle=True,
+            num_workers=multiprocessing.cpu_count() // 2,
+            pin_memory=True,
+            drop_last=True,
+        )
+        valid_dataloader = DataLoader(
+            valid_set,
+            batch_size,
+            shuffle=False,
+            num_workers=multiprocessing.cpu_count() // 2,
+            pin_memory=True,
+            drop_last=True,
+        )
+        return train_dataloader, valid_dataloader
+    if stage == "eval":
+        print("eval dataset loading")
+        test_set = make_dataset(stage)
+        test_set = CustomDataset(test_set, test=True, transform=test_transform)
+        return DataLoader(
+            test_set,
+            batch_size,
+            shuffle=False,
+            num_workers=multiprocessing.cpu_count() // 2,
+            pin_memory=True,
+            drop_last=False,
+        )
+
 
 # from base import BaseDataLoader
 
-
-class MaskDataLoader(DataLoader):
-    def __init__(
-        self,
-        data_dir,
-        batch_size,
-        shuffle=True,
-        num_workers=1,
-        training=True,
-    ):
-        self.transform = T.BasicTransform()
-        # transforms.Compose(
-        #     [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
-        # )
-        self.data_dir = data_dir
-        self.batch_size = batch_size
-        self.shuffle = shuffle
-        self.num_workers = num_workers
-        self.training = training
-        self.dataset = ds(
-            data_dir=self.data_dir, train=self.training, transform=self.transform
-        )
-        super().__init__(
-            data_dir=self.data_dir,
-            dataset=self.dataset,
-            batch_size=self.batch_size,
-            shuffle=self.shuffle,
-            num_workers=self.num_workers,
-        )
+if __name__ == "__main__":
+    setup(stage="train")
