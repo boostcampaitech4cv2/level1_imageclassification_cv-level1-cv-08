@@ -6,15 +6,21 @@ import model.loss as module_loss
 import model.metric as module_metric
 import model.model as module_arch
 from parse_config import ConfigParser
-
+from torchvision.utils import save_image
+import matplotlib.pyplot as plt
+import cv2
+import random
 
 def main(config):
     logger = config.get_logger('test')
 
+    print(config['data_loader']['type'], config['data_loader']['args']['data_dir'])
+
     # setup data_loader instances
     data_loader = getattr(module_data, config['data_loader']['type'])(
         config['data_loader']['args']['data_dir'],
-        batch_size=512,
+        batch_size=64,
+        # batch_size=512,
         shuffle=False,
         validation_split=0.0,
         training=False,
@@ -52,6 +58,13 @@ def main(config):
             #
             # save sample images, or do something with output here
             #
+            # cv2.imread(data)
+            # no = random.randint(0,64) #배치사이즈 내부 이미지 랜덤(0~64)
+            # print(no, data.shape)
+            # plt.imshow(data[no].cpu().numpy().transpose((1, 2, 0)))
+            # plt.title('pred: ' + str(target[no].cpu().numpy()))
+            # plt.savefig('savefig_default.png')
+            # break
 
             # computing loss, metrics on test set
             loss = loss_fn(output, target)

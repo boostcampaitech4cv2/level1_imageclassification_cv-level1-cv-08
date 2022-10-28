@@ -1,16 +1,147 @@
 from torchvision import datasets, transforms
 from base import BaseDataLoader
+from torch.utils.data import Dataset
+import pandas as pd
+import cv2
+import os
+import torch
+import numpy as np
 
+# class L1Dataset(Dataset):
+#     def __init__(self, df, transform=None, classes=None):
+#         self.df, self.transform, self.classes = df, transform, classes
+#     def __getitem__(self, idx):
+#         data = self.df.iloc[idx]
+#         # image = Image.open(data['img_path'])
+#         # print(data['img_path']+'/'+data['filename'])
+#         try:
+#             image = cv2.imread(data['img_path']+'/'+data['filename'])
+#             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+#         except:
+#             print("ERROR:", data['img_path']+'/'+data['filename'], type(image))
+#         # if self.transform: image = self.transform(image=image)["image"]
+#         if self.transform: image = self.transform(image)
 
-class MnistDataLoader(BaseDataLoader):
-    """
-    MNIST data loading demo using BaseDataLoader
-    """
-    def __init__(self, data_dir, batch_size, shuffle=True, validation_split=0.0, num_workers=1, training=True):
+#         # return image, data['mask']
+#         multi_class_label = data['mask'] * 6 + data['gender'] * 3 + data['age']
+#         return image, multi_class_label
+
+#         # rtn = (data['gender'], int(data['age']), data['mask'])
+#         # return image, torch.from_numpy(np.asarray(rtn)).float()
+
+#     def __len__(self): return len(self.df)
+
+class L1Dataset_kind(Dataset):
+    def __init__(self, kind, df, transform=None, classes=None):
+        self.kind, self.df, self.transform, self.classes = kind, df, transform, classes
+    def __getitem__(self, idx):
+        data = self.df.iloc[idx]
+        image = cv2.imread(data['img_path']+'/'+data['filename'])
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        if self.transform: image = self.transform(image)
+
+        ##kind 값 'all' 시 멀티클래스인코딩
+        if self.kind == 'all': return image, data['mask'] * 6 + data['gender'] * 3 + data['age']
+        else: return image, data[self.kind]
+        # else: return image, np.asarray(data[self.kind])
+
+    def __len__(self): return len(self.df)
+
+class L1DataLoader_kind(BaseDataLoader):
+    def __init__(self, kind, data_dir, batch_size, shuffle=True, validation_split=0.0, num_workers=1, training=True):
         trsfm = transforms.Compose([
             transforms.ToTensor(),
-            transforms.Normalize((0.1307,), (0.3081,))
+            transforms.RandomHorizontalFlip(),              
+            transforms.RandomAffine(0, shear=10, scale=(0.8,1.2)),
+            transforms.Normalize((0.1307,), (0.3081,)),
         ])
         self.data_dir = data_dir
-        self.dataset = datasets.MNIST(self.data_dir, train=training, download=True, transform=trsfm)
+
+        df = pd.read_csv(f'{self.data_dir}/train.csv')
+        dfms = pd.DataFrame(columns=['gender', 'age', 'mask', 'img_path'])
+        arr = {'incorrect_mask':1, 'mask1':0, 'mask2':0, 'mask3':0, 'mask4':0, 'mask5':0, 'normal':2}
+
+        for key, val in arr.items():
+            temp = pd.DataFrame(columns=['gender', 'age', 'mask', 'img_path'])
+            map_gender = {'male':0, 'female':1}
+            temp = df[['gender', 'age']].copy()
+            temp.loc[:,('gender')] = df[['gender']].applymap(map_gender.get)
+            temp.loc[:,('mask')] = val
+            temp.loc[:,('img_path')] = self.data_dir +'images/'+df['path']
+            temp.loc[:,('filename')] = key
+
+            ##kind 값 'all' 시 연령값 인코딩
+            # if kind == 'all':
+            temp.loc[:,('age')] =   np.where(df['age']<30, 0,
+                                    np.where(df['age']<60, 1, 2))
+
+            dfms = pd.concat([dfms, temp])
+        
+        for idx, path in enumerate(dfms['img_path']):
+            filename = dfms['filename'].iloc[idx]
+            dfms['filename'].iloc[idx] += '.'+self.get_ext(path, filename)
+
+        df_classes = None
+
+        self.dataset = L1Dataset_kind(kind, dfms, transform=trsfm, classes=df_classes)
+
         super().__init__(self.dataset, batch_size, shuffle, validation_split, num_workers)
+
+    def get_ext(self, path, filename):
+        with os.scandir(f'{path}/') as it:
+            for entry in it:
+                if not entry.name.startswith('.') and entry.is_file():
+                    name, ext = entry.name.split('.')
+                    if filename == name: return ext
+
+
+# class L1DataLoader(BaseDataLoader):
+#     """
+#     Level 1 data loading using BaseDataLoader
+#     """    
+#     def __init__(self, data_dir, batch_size, shuffle=True, validation_split=0.0, num_workers=1, training=True):
+#         trsfm = transforms.Compose([
+#             transforms.ToTensor(),
+#             transforms.RandomHorizontalFlip(),              
+#             transforms.RandomAffine(0, shear=10, scale=(0.8,1.2)),
+#             # transforms.RandomVerticalFlip(),        
+#             transforms.Normalize((0.1307,), (0.3081,)),
+#         ])
+#         self.data_dir = data_dir
+
+#         # self.dataset = datasets.MNIST(self.data_dir, train=training, download=True, transform=trsfm)
+#         # df = pd.DataFrame()
+#         df = pd.read_csv(f'{self.data_dir}/train.csv')
+#         dfms = pd.DataFrame(columns=['gender', 'age', 'mask', 'img_path'])
+
+#         arr = {'incorrect_mask':1, 'mask1':0, 'mask2':0, 'mask3':0, 'mask4':0, 'mask5':0, 'normal':2}
+
+#         for key, val in arr.items():
+#             temp = pd.DataFrame(columns=['gender', 'age', 'mask', 'img_path'])
+#             map_gender = {'male':0, 'female':1}
+#             temp = df[['gender', 'age']].copy()
+#             temp.loc[:,('gender')] = df[['gender']].applymap(map_gender.get)
+#             temp.loc[:,('mask')] = val
+#             temp.loc[:,('img_path')] = self.data_dir +'images/'+df['path']
+#             temp.loc[:,('filename')] = key
+#             temp.loc[:,('age')] =   np.where(df['age']<30, 0,
+#                                     np.where(df['age']<60, 1, 2))
+
+#             dfms = pd.concat([dfms, temp])
+        
+#         for idx, path in enumerate(dfms['img_path']):
+#             filename = dfms['filename'].iloc[idx]
+#             dfms['filename'].iloc[idx] += '.'+self.get_ext(path, filename)
+
+#         df_classes = None
+#         # print(self.data_dir, df, df_classes)
+#         self.dataset = L1Dataset(dfms, transform=trsfm, classes=df_classes)
+
+#         super().__init__(self.dataset, batch_size, shuffle, validation_split, num_workers)
+
+#     def get_ext(self, path, filename):
+#         with os.scandir(f'{path}/') as it:
+#             for entry in it:
+#                 if not entry.name.startswith('.') and entry.is_file():
+#                     name, ext = entry.name.split('.')
+#                     if filename == name: return ext
