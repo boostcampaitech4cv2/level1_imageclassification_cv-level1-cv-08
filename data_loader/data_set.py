@@ -3,6 +3,9 @@ import numpy as np
 import os
 from PIL import Image
 from torch.utils.data import Dataset
+from PIL import ImageFile
+
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 
 class TrainDataset(Dataset):

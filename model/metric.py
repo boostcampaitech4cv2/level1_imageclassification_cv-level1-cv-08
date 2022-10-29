@@ -8,12 +8,12 @@ def accuracy(output, target):
         mask_out.data.max(1, keepdim=True)[1] * 6
         + gender_out.data.max(1, keepdim=True)[1] * 2
         + age_out.data.max(1, keepdim=True)[1]
-    )
+    ).squeeze()
     target = (
         mask_target.data.max(1, keepdim=True)[1] * 6
         + gender_target.data.max(1, keepdim=True)[1] * 2
         + age_target.data.max(1, keepdim=True)[1]
-    )
+    ).squeeze()
     with torch.no_grad():
         assert output.shape[0] == len(target)
         correct = 0

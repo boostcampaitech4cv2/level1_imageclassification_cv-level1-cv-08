@@ -1,4 +1,3 @@
-from this import s
 import torch.nn as nn
 import torch.nn.functional as F
 from base import BaseModel
@@ -49,19 +48,19 @@ class ClibGh(nn.Module):
         self.encode_image = model.visual
 
         # text
-        self.token_embedding = model.token_embedding
-        self.positional_embedding = model.positional_embedding
-        self.transformer = model.transformer
-        self.ln_final = model.ln_final
-        self.text_projection = model.text_projection
+        # self.token_embedding = model.token_embedding
+        # self.positional_embedding = model.positional_embedding
+        # self.transformer = model.transformer
+        # self.ln_final = model.ln_final
+        # self.text_projection = model.text_projection
 
         # freeze
         self.is_train(self.encode_image, _train=False)
-        self.is_train(self.token_embedding, _train=False)
-        self.is_train(self.transformer, _train=False)
-        self.is_train(self.ln_final, _train=False)
-        self.positional_embedding.requires_grad_(False)
-        self.text_projection.requires_grad_(False)
+        # self.is_train(self.token_embedding, _train=True)
+        # self.is_train(self.transformer, _train=True)
+        # self.is_train(self.ln_final, _train=True)
+        # self.positional_embedding.requires_grad_(True)
+        # self.text_projection.requires_grad_(True)
         # train
 
         self.mask_text = [
@@ -76,24 +75,37 @@ class ClibGh(nn.Module):
             "This person is over 60 years old.",
         ]
 
-        self.mask_token = clip.tokenize(self.mask_text).to(self.device)
-        self.gender_token = clip.tokenize(self.gender_text).to(self.device)
-        self.age_token = clip.tokenize(self.age_text).to(self.device)
+        self.mask_feature = model.encode_text(
+            clip.tokenize(self.mask_text).to(self.device)
+        )
+        self.gender_feature = model.encode_text(
+            clip.tokenize(self.gender_text).to(self.device)
+        )
+        self.age_feature = model.encode_text(
+            clip.tokenize(self.age_text).to(self.device)
+        )
+        self.cossim = nn.CosineSimilarity(dim=-1)
+
+        self.mask_fc = nn.Linear(1024, 3).type(self.dtype)
+        self.gender_fc = nn.Linear(1024, 2).type(self.dtype)
+        self.age_fc = nn.Linear(1024, 3).type(self.dtype)
 
     def forward(self, x):
-        img_feature = self.encode_image(x).unsqueeze(1)
-        img_feature = img_feature / img_feature.norm(dim=1, keepdim=True)
+        img_feature = self.encode_image(x)
 
-        mask_feature = self.encode_text(self.mask_token).to(self.device)
-        mask_feature = mask_feature / mask_feature.norm(dim=1, keepdim=True)
+        # mask_feature = self.encode_text(self.mask_token).to(self.device)
+        # gender_feature = self.encode_text(self.gender_token).to(self.device)
+        # age_feature = self.encode_text(self.age_token).to(self.device)
 
-        gender_feature = self.encode_text(self.gender_token).to(self.device)
-        gender_feature = gender_feature / gender_feature.norm(dim=1, keepdim=True)
+        # mask_out = self.cossim(img_feature, mask_feature)
+        # gender_out = self.cossim(img_feature, gender_feature)
+        # age_out = self.cossim(img_feature, age_feature)
 
-        age_feature = self.encode_text(self.age_token).to(self.device)
-        age_feature = age_feature / age_feature.norm(dim=1, keepdim=True)
+        mask_img = self.mask_fc(img_feature)
+        gender_img = self.gender_fc(img_feature)
+        age_img = self.age_fc(img_feature)
 
-        return img_feature, mask_out, gender_out, age_out
+        return (mask_img, gender_img, age_img)
 
     def is_train(self, module, _train=True):
         for m in module.parameters():

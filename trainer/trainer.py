@@ -55,14 +55,12 @@ class Trainer(BaseTrainer):
         """
         self.model.train()
         self.train_metrics.reset()
-        torch.autograd.set_detect_anomaly(True)
-
         for batch_idx, (data, target) in enumerate(self.data_loader):
             data, target = data.to(self.device), target.to(self.device)
-
             self.optimizer.zero_grad()
             output = self.model(data)
             loss = self.criterion(output, target)
+
             loss.backward()
             self.optimizer.step()
 
@@ -91,6 +89,7 @@ class Trainer(BaseTrainer):
 
         if self.lr_scheduler is not None:
             self.lr_scheduler.step()
+        print(output)
         return log
 
     def _valid_epoch(self, epoch):
