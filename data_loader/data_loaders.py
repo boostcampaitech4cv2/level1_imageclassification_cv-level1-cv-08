@@ -7,6 +7,8 @@ from albumentations.pytorch import ToTensorV2
 import multiprocessing
 import cv2
 from sklearn.model_selection import train_test_split
+import pandas as pd
+import os
 
 
 class CustomDataset(Dataset):
@@ -68,8 +70,9 @@ def prepare_dataset(files):
 
 
 def make_dataset(stage="train"):
-    path = f"/opt/ml/input/data/{stage}/images"
+    path = f"/opt/ml/input/data/{stage}"
     if stage == "train":
+        path=path+"/images"
         files = glob(f"{path}/*/*.jpg")
         files += glob(f"{path}/*/*.jpeg")
         files += glob(f"{path}/*/*.png")
@@ -77,17 +80,20 @@ def make_dataset(stage="train"):
         files = prepare_dataset(files)
 
         train_set, valid_set = train_test_split(
-            files, test_size=0.2, random_state=42, shuffle=True
+            files, test_size=0.1, random_state=42, shuffle=True
         )
         print(f"train dataset size : {len(train_set)}")
         print(f"valid dataset size : {len(valid_set)}")
 
         return train_set, valid_set
     if stage == "eval":
-        files = glob(f"{path}/*.jpg")
-        assert len(files) == 12600, "Whole dataset is not complete"
+        submission = pd.read_csv(os.path.join(path, "info.csv"))
+        image_dir = os.path.join(path, "images")
+        image_paths = [os.path.join(image_dir, img_id) for img_id in submission.ImageID]
 
-        return files
+        assert len(image_paths) == 12600, "Whole dataset is not complete"
+
+        return image_paths
 
 
 def setup(

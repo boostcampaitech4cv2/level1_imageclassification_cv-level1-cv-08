@@ -2,6 +2,8 @@ from abc import abstractmethod
 from numpy import inf
 from logger import TensorboardWriter
 import torch
+import os
+from glob import glob
 
 
 class BaseTrainer:
@@ -9,12 +11,13 @@ class BaseTrainer:
     Base class for all trainers
     """
 
-    def __init__(self, model, criterion, optimizer, config):
+    def __init__(self, model, criterion, metric_ftns, optimizer, config):
         self.config = config
         self.logger = config.get_logger("trainer", config["trainer"]["verbosity"])
 
         self.model = model
         self.criterion = criterion
+        self.metric_ftns = metric_ftns
         self.optimizer = optimizer
 
         cfg_trainer = config["trainer"]
@@ -118,13 +121,17 @@ class BaseTrainer:
             "monitor_best": self.mnt_best,
             "config": self.config,
         }
-        filename = str(self.checkpoint_dir / f"checkpoint-epoch{epoch}.pth")
+        filename = str(self.checkpoint_dir / f"last_epoch{epoch}.pth")
         torch.save(state, filename)
         self.logger.info(f"Saving checkpoint: {filename} ...")
         if save_best:
-            best_path = str(self.checkpoint_dir / "model_best.pth")
+            best_path = str(self.checkpoint_dir / "best_epoch.pth")
             torch.save(state, best_path)
-            self.logger.info("Saving current best: model_best.pth ...")
+            self.logger.info(f"Saving current best epoch({epoch}): model_best.pth ...")
+        removes = glob(f"{self.checkpoint_dir}/last*.pth")
+        for remove in removes:
+            if str(epoch - 1) in remove.split("/")[-1]:
+                os.remove(remove)
 
     def _resume_checkpoint(self, resume_path):
         """

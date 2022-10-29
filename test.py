@@ -20,7 +20,7 @@ def main(CONFIG):
         batch_size=CONFIG["data_loader"]["args"]["batch_size"],
         num_workers=CONFIG["data_loader"]["args"]["num_workers"],
     )
-
+    
     # build model architecture
     model = CONFIG.init_obj("arch", module_arch)
     logger.info(CONFIG["arch"]["args"]["model_name"])
@@ -81,7 +81,7 @@ if __name__ == "__main__":
     args.add_argument(
         "-r",
         "--resume",
-        default="/opt/ml/level1_imageclassification_cv-level1-cv-08/saved/models/Mask_base/10.27_01:26:26/model_best.pth",
+        default="saved/models/Mask_base/10.29_21:05:55/last_epoch15.pth",
         type=str,
         help="path to latest checkpoint (default: None)",
     )

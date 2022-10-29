@@ -9,9 +9,9 @@ class TimmModel(nn.Module):
         self, model_name="efficientnetv2_rw_s", pretrained=True, num_classes=18
     ):
         super().__init__()
-        self.model = timm.create_model(model_name, pretrained=pretrained)
-        n_features = self.model.classifier.in_features
-        self.model.classifier = nn.Linear(n_features, num_classes)
+        self.model = timm.create_model(
+            model_name, pretrained=pretrained, num_classes=num_classes
+        )
 
     def forward(self, x):
         x = self.model(x)

@@ -13,7 +13,7 @@
         "type": "setup",
         "args": {
             "stage": "train",
-            "input_size": 288,
+            "input_size": 224,
             "batch_size": 64,
             "num_workers": 4
         }
@@ -27,7 +27,10 @@
         }
     },
     "loss": "ce_loss",
-    "metrics": [],
+    "metrics": [
+        "accuracy",
+        "f1"
+    ],
     "lr_scheduler": {
         "type": "StepLR",
         "args": {
@@ -41,10 +44,11 @@
         "save_period": 1,
         "verbosity": 2,
         "monitor": "min val/loss",
-        "early_stop": 5,
+        "early_stop": 7,
         "tensorboard": false
     },
     "wandb": true,
-    "submit_dir": "/opt/ml/level1_imageclassification_cv-level1-cv-08/submit",
+    "visualize": false,
+    "submit_dir": "/opt/ml/level1/submit",
     "info_dir": "/opt/ml/input/data/eval"
 }
