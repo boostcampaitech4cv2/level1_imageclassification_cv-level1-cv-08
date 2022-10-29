@@ -123,3 +123,29 @@ class ClibGh(nn.Module):
         # take features from the eot embedding (eot_token is the highest number in each sequence)
         x = x[torch.arange(x.shape[0]), text.argmax(dim=-1)] @ self.text_projection
         return x
+
+
+class Vit_GH(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.backbone = timm.create_model("vit_base_patch16_384", pretrained=True)
+        self.is_train(self.backbone, False)
+        self.backbone.head = nn.Linear(768, 512)
+
+        self.mask_out = self.make_out_layer(3)
+        self.mask_out = self.make_out_layer(2)
+        self.mask_out = self.make_out_layer(3)
+
+    def forward(self, x):
+        x = self.backbone(x)
+        mask_out = self.mask_out(x)
+        gender_out = self.mask_out(x)
+        age_out = self.mask_out(x)
+        return mask_out, gender_out, age_out
+
+    def make_out_layer(self, num_class):
+        return nn.Sequential(nn.Linear(512, 128), nn.Linear(128, num_class))
+
+    def is_train(self, module, _train=True):
+        for m in module.parameters():
+            m.requires_grad_(_train)

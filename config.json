@@ -1,12 +1,12 @@
 {
-    "name": "ClibGh_test",
+    "name": "Vit_GH",
     "n_gpu": 1,
     "arch": {
-        "type": "ClibGh",
+        "type": "Vit_GH",
         "args": {}
     },
     "data_loader": {
-        "type": "TrainLoader",
+        "type": "TrainLoader_vit",
         "args": {
             "data_dir": "/opt/ml/level1_imageclassification_cv-level1-cv-08/data_loader/data/train/",
             "batch_size": 128,
@@ -25,7 +25,8 @@
     },
     "loss": "ClibGh_loss",
     "metrics": [
-        "accuracy"
+        "accuracy",
+        "macro_f1"
     ],
     "lr_scheduler": {
         "type": "StepLR",
