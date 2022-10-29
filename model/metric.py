@@ -55,4 +55,4 @@ def macro_f1(output, target):
     macrof1 = [
         f1(output, target, i) for i in range(18) if f1(output, target, i) != None
     ]
-    return sum(macrof1) / len(macrof1)
+    return sum(macrof1) / 18
