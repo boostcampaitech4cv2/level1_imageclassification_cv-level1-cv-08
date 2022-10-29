@@ -91,7 +91,7 @@ if __name__ == "__main__":
     args.add_argument(
         "-c",
         "--config",
-        default="./config.json",
+        default="/opt/ml/level1_imageclassification_cv-level1-cv-08/config.json",
         type=str,
         help="config file path (default: None)",
     )
