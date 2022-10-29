@@ -7,6 +7,7 @@ import wandb
 
 import data_loader.data_loaders as module_data
 import model.loss as module_loss
+import model.metric as module_metric
 import model.model as module_arch
 from parse_config import ConfigParser
 from trainer import Trainer
@@ -39,6 +40,7 @@ def main(CONFIG):
 
     # get function handles of loss and metrics
     criterion = getattr(module_loss, CONFIG["loss"])
+    metrics = [getattr(module_metric, met) for met in CONFIG["metrics"]]
 
     # build optimizer, learning rate scheduler. delete every lines containing lr_scheduler for disabling scheduler
     trainable_params = filter(lambda p: p.requires_grad, model.parameters())
@@ -48,6 +50,7 @@ def main(CONFIG):
     trainer = Trainer(
         model,
         criterion,
+        metrics,
         optimizer,
         config=CONFIG,
         device=device,
@@ -120,9 +123,7 @@ if __name__ == "__main__":
         CustomArgs(
             ["--arch", "--architecture"], type=str, target="arch;args;model_name"
         ),
-        CustomArgs(
-            ["--model", "--model_framework"], type=str, target="arch;type"
-        ),
+        CustomArgs(["--model", "--model_framework"], type=str, target="arch;type"),
     ]
     config = ConfigParser.from_args(args, options)
     main(config)
