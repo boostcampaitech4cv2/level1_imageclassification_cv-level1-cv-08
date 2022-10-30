@@ -130,21 +130,32 @@ class Vit_GH(nn.Module):
         super().__init__()
         self.backbone = timm.create_model("vit_base_patch16_384", pretrained=True)
         self.is_train(self.backbone, False)
-        self.backbone.head = nn.Linear(768, 512)
 
+        self.is_train(self.backbone.blocks[-1])
+        self.backbone.norm.requires_grad_ = True
+
+        self.backbone.head = nn.Linear(768, 512)
         self.mask_out = self.make_out_layer(3)
-        self.mask_out = self.make_out_layer(2)
-        self.mask_out = self.make_out_layer(3)
+        self.gender_out = self.make_out_layer(2)
+        self.age_out = self.make_out_layer(3)
 
     def forward(self, x):
         x = self.backbone(x)
         mask_out = self.mask_out(x)
-        gender_out = self.mask_out(x)
-        age_out = self.mask_out(x)
+        gender_out = self.gender_out(x)
+        age_out = self.age_out(x)
         return mask_out, gender_out, age_out
 
     def make_out_layer(self, num_class):
-        return nn.Sequential(nn.Linear(512, 128), nn.Linear(128, num_class))
+        return nn.Sequential(
+            nn.Linear(512, 256),
+            nn.BatchNorm1d(num_features=256),
+            nn.ReLU(),
+            nn.Linear(256, 64),
+            nn.BatchNorm1d(num_features=64),
+            nn.ReLU(),
+            nn.Linear(64, num_class),
+        )
 
     def is_train(self, module, _train=True):
         for m in module.parameters():
