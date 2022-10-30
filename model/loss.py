@@ -9,12 +9,18 @@ def nll_loss(output, target):
 
 
 def ClibGh_loss(outputs, target):
-    Loss = nn.CrossEntropyLoss()
+    Loss_mask = nn.CrossEntropyLoss(weight=torch.tensor(([1.4, 7.0, 7.0]))).cuda()
+    Loss_gender = nn.CrossEntropyLoss(weight=torch.tensor(([1.6285, 2.5912]))).cuda()
+    Loss_age = nn.CrossEntropyLoss(
+        weight=torch.tensor(([2.1077, 2.2005, 14.0625]))
+    ).cuda()
+
     mask_out, gender_out, age_out = outputs
     mask_target, gender_target, age_target = torch.split(target, 1, dim=1)
 
     return (
-        0.375 * Loss(mask_out.squeeze(), mask_target.squeeze().to(torch.long))
-        + 0.25 * Loss(gender_out.squeeze(), gender_target.squeeze().to(torch.long))
-        + 0.375 * Loss(age_out.squeeze(), age_target.squeeze().to(torch.long))
+        0.375 * Loss_mask(mask_out.squeeze(), mask_target.squeeze().to(torch.long))
+        + 0.25
+        * Loss_gender(gender_out.squeeze(), gender_target.squeeze().to(torch.long))
+        + 0.375 * Loss_age(age_out.squeeze(), age_target.squeeze().to(torch.long))
     )
