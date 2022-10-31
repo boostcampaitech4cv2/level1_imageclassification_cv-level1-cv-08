@@ -132,7 +132,6 @@ class Vit_GH(nn.Module):
         self.is_train(self.backbone, False)
 
         self.is_train(self.backbone.blocks[-1])
-        self.backbone.norm.requires_grad_ = True
 
         self.backbone.head = nn.Sequential(
             nn.Linear(768, 512), nn.BatchNorm1d(512), nn.ReLU(), nn.Dropout(0.3)
@@ -164,3 +163,11 @@ class Vit_GH(nn.Module):
     def is_train(self, module, _train=True):
         for m in module.parameters():
             m.requires_grad_(_train)
+
+    def train_layer(self, epoch):
+        pivot = [
+            [self.mask_out, self.gender_out, self.age_out],
+            [self.backbone.norm, self.backbone.fc_norm, self.head],
+            *[block for block in self.backbone.blocks[::-1]],
+        ]
+        return pivot
