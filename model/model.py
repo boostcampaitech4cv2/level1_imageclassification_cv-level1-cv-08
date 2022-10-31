@@ -134,7 +134,9 @@ class Vit_GH(nn.Module):
         self.is_train(self.backbone.blocks[-1])
         self.backbone.norm.requires_grad_ = True
 
-        self.backbone.head = nn.Linear(768, 512)
+        self.backbone.head = nn.Sequential(
+            nn.Linear(768, 512), nn.BatchNorm1d(512), nn.ReLU(), nn.Dropout(0.3)
+        )
         self.mask_out = self.make_out_layer(3)
         self.gender_out = self.make_out_layer(2)
         self.age_out = self.make_out_layer(3)
@@ -151,10 +153,12 @@ class Vit_GH(nn.Module):
             nn.Linear(512, 256),
             nn.BatchNorm1d(num_features=256),
             nn.ReLU(),
-            nn.Linear(256, 64),
-            nn.BatchNorm1d(num_features=64),
+            nn.Dropout(0.3),
+            nn.Linear(256, 128),
+            nn.BatchNorm1d(num_features=128),
             nn.ReLU(),
-            nn.Linear(64, num_class),
+            nn.Dropout(0.3),
+            nn.Linear(128, num_class),
         )
 
     def is_train(self, module, _train=True):
