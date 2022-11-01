@@ -150,51 +150,17 @@ class Vit_GH(nn.Module):
     def __init__(self):
         super().__init__()
         self.backbone = timm.create_model("vit_base_resnet50_384", pretrained=True)
-        self.backbone.blocks = self.backbone.blocks
+        del self.backbone.head
+
+        self.fc = VitFc()
+
         for m in self.backbone.parameters():
             m.requires_grad_(False)
 
-        self.backbone.head = nn.Sequential(
-            nn.Linear(768, 256), nn.BatchNorm1d(256), nn.LeakyReLU(), nn.Dropout(0.3)
-        )
-
-        self.mask_out = self.make_out_layer(3)
-        self.gender_out = self.make_out_layer(2)
-        self.age_out = self.make_out_layer(3)
-
-        self.layer_list = [
-            [
-                self.mask_out,
-                self.gender_out,
-                self.age_out,
-                self.backbone.head,
-            ],
-            *[[block] for block in self.backbone.blocks[::-1]],
-            [self.backbone.patch_embed, self.backbone.pos_drop, self.backbone.norm_pre],
-        ]
-        # weight init
-        for layer in self.layer_list[0]:
-            for j in layer.parameters():
-                if j.dim() == 2:
-                    nn.init.kaiming_uniform_(j, nonlinearity="leaky_relu")
-                elif j.dim() == 1:
-                    j.data.fill_(0.0)
-
     def forward(self, x):
         x = self.backbone(x)
-        mask_out = self.mask_out(x)
-        gender_out = self.gender_out(x)
-        age_out = self.age_out(x)
+        mask_out, gender_out, age_out = self.fc(x)
         return mask_out, gender_out, age_out
-
-    def make_out_layer(self, num_class):
-        return nn.Sequential(
-            nn.Linear(256, 64),
-            nn.BatchNorm1d(num_features=64),
-            nn.LeakyReLU(),
-            nn.Dropout(0.3),
-            nn.Linear(64, num_class),
-        )
 
     def is_train(self, modules, _train=True):
         for module in modules:
@@ -204,3 +170,38 @@ class Vit_GH(nn.Module):
     def train_layer(self, epoch):
         self.is_train(self.layer_list[(epoch - 1) % len(self.layer_list)], True)
         self.is_train(self.layer_list[(epoch - 2) % len(self.layer_list)], False)
+
+
+class VitFc(nn.modules):
+    def __init__(self):
+        super().__init__()
+        self.mask_out = self.make_out_layer(3)
+        self.gender_out = self.make_out_layer(2)
+        self.age_out = self.make_out_layer(3)
+
+        # weight init
+        for layer in [self.mask_out, self.gender_out, self.age_out]:
+            for j in layer.parameters():
+                if j.dim() == 2:
+                    nn.init.kaiming_uniform_(j, nonlinearity="leaky_relu")
+                elif j.dim() == 1:
+                    j.data.fill_(0.0)
+
+    def forward(self, x):
+        mask_out = self.mask_out(x)
+        gender_out = self.gender_out(x)
+        age_out = self.age_out(x)
+        return mask_out, gender_out, age_out
+
+    def make_out_layer(self, num_class):
+        return nn.Sequential(
+            nn.Linear(768, 256),
+            nn.BatchNorm1d(256),
+            nn.LeakyReLU(),
+            nn.Dropout(0.3),
+            nn.Linear(256, 64),
+            nn.BatchNorm1d(num_features=64),
+            nn.LeakyReLU(),
+            nn.Dropout(0.3),
+            nn.Linear(64, num_class),
+        )
