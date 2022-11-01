@@ -24,14 +24,35 @@ class MnistModel(BaseModel):
         return F.log_softmax(x, dim=1)
 
 
-class Res18(BaseModel):
+class Res(BaseModel):
     def __init__(self):
         super().__init__()
-        self.res18 = timm.create_model("resnet18d", pretrained=True, num_classes=18)
+        self.res = timm.create_model("resnet34")
+        self.res.fc = nn.Sequential(
+            nn.Linear(512, 256), nn.BatchNorm1d(256), nn.LeakyReLU(), nn.Dropout(0.3)
+        )
+
+        self.mask_out = self.make_out_layer(3)
+        self.gender_out = self.make_out_layer(2)
+        self.age_out = self.make_out_layer(3)
+
+        # weight init
 
     def forward(self, x):
-        x = self.res18(x)
-        return F.log_softmax(x, dim=1)
+        x = self.res(x)
+        mask_out = self.mask_out(x)
+        gender_out = self.gender_out(x)
+        age_out = self.age_out(x)
+        return mask_out, gender_out, age_out
+
+    def make_out_layer(self, num_class):
+        return nn.Sequential(
+            nn.Linear(256, 64),
+            nn.BatchNorm1d(num_features=64),
+            nn.LeakyReLU(),
+            nn.Dropout(0.3),
+            nn.Linear(64, num_class),
+        )
 
 
 class ClibGh(nn.Module):
@@ -128,17 +149,36 @@ class ClibGh(nn.Module):
 class Vit_GH(nn.Module):
     def __init__(self):
         super().__init__()
-        self.backbone = timm.create_model("vit_base_patch16_384", pretrained=True)
-        self.is_train(self.backbone, False)
-
-        self.is_train(self.backbone.blocks[-1])
+        self.backbone = timm.create_model("vit_base_resnet50_384", pretrained=True)
+        self.backbone.blocks = self.backbone.blocks
+        for m in self.backbone.parameters():
+            m.requires_grad_(False)
 
         self.backbone.head = nn.Sequential(
-            nn.Linear(768, 512), nn.BatchNorm1d(512), nn.ReLU(), nn.Dropout(0.3)
+            nn.Linear(768, 256), nn.BatchNorm1d(256), nn.LeakyReLU(), nn.Dropout(0.3)
         )
+
         self.mask_out = self.make_out_layer(3)
         self.gender_out = self.make_out_layer(2)
         self.age_out = self.make_out_layer(3)
+
+        self.layer_list = [
+            [
+                self.mask_out,
+                self.gender_out,
+                self.age_out,
+                self.backbone.head,
+            ],
+            *[[block] for block in self.backbone.blocks[::-1]],
+            [self.backbone.patch_embed, self.backbone.pos_drop, self.backbone.norm_pre],
+        ]
+        # weight init
+        for layer in self.layer_list[0]:
+            for j in layer.parameters():
+                if j.dim() == 2:
+                    nn.init.kaiming_uniform_(j, nonlinearity="leaky_relu")
+                elif j.dim() == 1:
+                    j.data.fill_(0.0)
 
     def forward(self, x):
         x = self.backbone(x)
@@ -149,25 +189,18 @@ class Vit_GH(nn.Module):
 
     def make_out_layer(self, num_class):
         return nn.Sequential(
-            nn.Linear(512, 256),
-            nn.BatchNorm1d(num_features=256),
-            nn.ReLU(),
+            nn.Linear(256, 64),
+            nn.BatchNorm1d(num_features=64),
+            nn.LeakyReLU(),
             nn.Dropout(0.3),
-            nn.Linear(256, 128),
-            nn.BatchNorm1d(num_features=128),
-            nn.ReLU(),
-            nn.Dropout(0.3),
-            nn.Linear(128, num_class),
+            nn.Linear(64, num_class),
         )
 
-    def is_train(self, module, _train=True):
-        for m in module.parameters():
-            m.requires_grad_(_train)
+    def is_train(self, modules, _train=True):
+        for module in modules:
+            for m in module.parameters():
+                m.requires_grad_(_train)
 
     def train_layer(self, epoch):
-        pivot = [
-            [self.mask_out, self.gender_out, self.age_out],
-            [self.backbone.norm, self.backbone.fc_norm, self.head],
-            *[block for block in self.backbone.blocks[::-1]],
-        ]
-        return pivot
+        self.is_train(self.layer_list[(epoch - 1) % len(self.layer_list)], True)
+        self.is_train(self.layer_list[(epoch - 2) % len(self.layer_list)], False)
