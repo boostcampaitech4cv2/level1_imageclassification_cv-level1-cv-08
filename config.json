@@ -26,7 +26,8 @@
             "amsgrad": true
         }
     },
-    "loss": "TripletMarginLoss",
+    "loss": "losses",
+    "loss_name": "TripletMarginLoss",
     "metrics": [
         "accuracy",
         "f1"

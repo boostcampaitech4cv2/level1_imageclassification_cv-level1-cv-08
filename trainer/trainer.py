@@ -72,7 +72,9 @@ class Trainer(BaseTrainer):
             output = self.model(data)
             pred = torch.argmax(output, dim=1)
 
-            loss = self.criterion(output, target)
+            # loss = self.criterion(output, target)
+            loss = self.criterion(self.config["loss_name"], output, target)
+            # loss = loss(output, target)
             loss.backward()
             self.optimizer.step()
             self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
@@ -139,8 +141,9 @@ class Trainer(BaseTrainer):
 
                 output = self.model(data)
                 pred = torch.argmax(output, dim=1)
-                loss = self.criterion(output, target)
+                # loss = self.criterion(self.config["loss_name"])
                 # loss = loss(output, target)
+                loss = self.criterion(self.config["loss_name"], output, target)
                 self.valid_metrics.update("loss", loss.item())
                 for met in self.metric_ftns:
                     self.valid_metrics.update(met.__name__, (v := met(pred, target)))
