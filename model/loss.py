@@ -1,6 +1,7 @@
 import torch.nn.functional as F
 import torch.nn as nn
 import torch
+from pytorch_metric_learning import losses
 
 
 def multilabel_loss(outputs, target):
@@ -20,12 +21,12 @@ def multilabel_loss(outputs, target):
     )
 
 
-def all_loss(loss_name, output, target):
+def all_loss(loss_name, output, target, inner_weight=None, loss_weight=1.0):
+    if inner_weight:
+        inner_weight = torch.tensor((inner_weight)).cuda()
     if loss_name == "nll_loss":
-        return F.nll_loss(output, target)
+        return F.nll_loss(output, target, weight=inner_weight) * loss_weight
     elif loss_name == "ce_loss":
-        return F.cross_entropy(output, target)
-    elif loss_name == "multilabel_loss":
-        return multilabel_loss(output, target)
+        return F.cross_entropy(output, target, weight=inner_weight) * loss_weight
     else:
-        return getattr(all_loss, loss_name)()(output, target)
+        return getattr(all_loss, loss_name)()(output, target) * loss_weight

@@ -51,7 +51,6 @@ class Trainer(BaseTrainer):
     def _train_epoch(self, epoch):
         """
         Training logic for an epoch
-
         :param epoch: Integer, current training epoch.
         :return: A log that contains average loss and metric in this epoch.
         """
@@ -74,17 +73,23 @@ class Trainer(BaseTrainer):
                 target[2].to(self.device),
                 target[3].to(self.device),
             )
-
+            feature_labels = [mask, gender, age]
             self.optimizer.zero_grad()
             output = self.model(data)
+            outputs = [output[0], output[1], output[2]]
             # output[0]: mask, output[1]: gender, output[2]: age
             pred = (
                 self.get_mask(output) + self.get_gender(output) + self.get_age(output)
             )
 
-            loss = self.criterion(
-                self.config["loss_name"], output, target=[mask, gender, age]
-            )
+            # if you don't need inner_weight, please set null in config.json.
+            loss_list = [
+                self.criterion(name, output, feature, inner_weight, loss_weight)
+                for (name, inner_weight, loss_weight), output, feature in zip(
+                    self.config["loss_name"], outputs, feature_labels
+                )
+            ]
+            loss = sum(loss_list)
             loss.backward()
             self.optimizer.step()
             self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
@@ -129,7 +134,6 @@ class Trainer(BaseTrainer):
     def _valid_epoch(self, epoch):
         """
         Validate after training an epoch
-
         :param epoch: Integer, current training epoch.
         :return: A log that contains information about validation
         """
@@ -154,17 +158,23 @@ class Trainer(BaseTrainer):
                     target[2].to(self.device),
                     target[3].to(self.device),
                 )
-
+                feature_labels = [mask, gender, age]
                 output = self.model(data)
+                outputs = [output[0], output[1], output[2]]
                 # output[0]: mask, output[1]: gender, output[2]: age
                 pred = (
                     self.get_mask(output)
                     + self.get_gender(output)
                     + self.get_age(output)
                 )
-                loss = self.criterion(
-                    self.config["loss_name"], output, target=[mask, gender, age]
-                )
+
+                loss_list = [
+                    self.criterion(name, output, feature, inner_weight, loss_weight)
+                    for (name, inner_weight, loss_weight), output, feature in zip(
+                        self.config["loss_name"], outputs, feature_labels
+                    )
+                ]
+                loss = sum(loss_list)
                 self.valid_metrics.update("loss", loss.item())
                 for met in self.metric_ftns:
                     self.valid_metrics.update(met.__name__, (v := met(pred, target)))
