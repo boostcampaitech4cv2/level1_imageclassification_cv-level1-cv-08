@@ -76,6 +76,11 @@ class Trainer(BaseTrainer):
 
             self.optimizer.zero_grad()
             output = self.model(data)
+            """
+            output[0].data.max : mask output 중 가장 큰 확률값
+            output[1].data.max : gender output 중 가장 큰 확률값
+            output[2].data.max : age output 중 가장 큰 확률값 -> apply 이용해 0~5의 data loader의 ages 범주를 target에 대응되게 0~2의 범주로 변환 
+            """
             pred = (
                 output[0].data.max(1, keepdim=True)[1] * 6
                 + output[1].data.max(1, keepdim=True)[1] * 2
