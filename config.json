@@ -2,10 +2,11 @@
     "name": "Mask_base",
     "n_gpu": 1,
     "arch": {
-        "type": "TimmModelMulti",
+        "type": "TimmModel",
         "args": {
             "model_name": "efficientnetv2_rw_s",
-            "pretrained": true
+            "pretrained": true,
+            "num_classes": 18
         }
     },
     "data_loader": {
@@ -26,7 +27,7 @@
         }
     },
     "loss": "all_loss",
-    "loss_name": "multilabel_loss",
+    "loss_name": "TripletMarginLoss",
     "metrics": [
         "accuracy",
         "f1"
