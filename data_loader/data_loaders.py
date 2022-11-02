@@ -130,7 +130,7 @@ def setup(
                 min_holes=1,
                 min_height=3,
                 min_width=3,
-                p=0.5,
+                p=0.3,
             ),
             A.Normalize(),
             ToTensorV2(),
