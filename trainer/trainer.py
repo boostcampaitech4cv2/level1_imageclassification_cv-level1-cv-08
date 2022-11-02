@@ -66,7 +66,13 @@ class Trainer(BaseTrainer):
         )
         self.train_metrics.reset()
         for batch_idx, (data, target) in enumerate(progress):
-            data, target = data.to(self.device), target[0].to(self.device)
+            data, target, mask, gender, age = (
+                data.to(self.device),
+                target[0].to(self.device),
+                target[1].to(self.device),
+                target[2].to(self.device),
+                target[3].to(self.device),
+            )
 
             self.optimizer.zero_grad()
             output = self.model(data)
