@@ -3,20 +3,10 @@ import torch.nn as nn
 import torch
 
 
-def nll_loss(output, target):
-    return F.nll_loss(output, target)
-
-
-def ce_loss(output, target):
-    return F.cross_entropy(output, target)
-
-
 def multilabel_loss(outputs, target):
     Loss_mask = nn.CrossEntropyLoss(weight=torch.tensor(([1.4, 7.0, 7.0]))).cuda()
     Loss_gender = nn.CrossEntropyLoss(weight=torch.tensor(([1.6285, 2.5912]))).cuda()
-    Loss_age = nn.CrossEntropyLoss(
-        weight=torch.tensor(([2.1077, 2.2005, 14.0625]))
-    ).cuda()
+    Loss_age = nn.CrossEntropyLoss().cuda()
 
     mask_out, gender_out, age_out = outputs
     mask_target, gender_target, age_target = target
@@ -29,5 +19,12 @@ def multilabel_loss(outputs, target):
     )
 
 
-def metrics_loss(loss_name):
-    return losses(getattr, loss_name)
+def losses(loss_name, output, target):
+    if loss_name == "nll_loss":
+        return F.nll_loss(output, target)
+    elif loss_name == "ce_loss":
+        return F.cross_entropy(output, target)
+    elif loss_name == "multilabel_loss":
+        return multilabel_loss(output, target)
+    else:
+        return getattr(losses, loss_name)()(output, target)

@@ -79,10 +79,18 @@ class Trainer(BaseTrainer):
             pred = (
                 output[0].data.max(1, keepdim=True)[1] * 6
                 + output[1].data.max(1, keepdim=True)[1] * 2
-                + output[2].data.max(1, keepdim=True)[1]
+                + output[2]
+                .data.max(1, keepdim=True)[1]
+                .cpu()
+                .apply_(lambda x: 0 if x <= 1 else (1 if x <= 4 else 2))
+                .to(self.device)
             ).squeeze()
 
-            loss = self.criterion(output, [mask, gender, age])
+            # loss = self.criterion(output, target)
+            loss = self.criterion(
+                self.config["loss_name"], output, target=[mask, gender, age]
+            )
+            # loss = loss(output, target)
             loss.backward()
             self.optimizer.step()
             self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
@@ -157,9 +165,15 @@ class Trainer(BaseTrainer):
                 pred = (
                     output[0].data.max(1, keepdim=True)[1] * 6
                     + output[1].data.max(1, keepdim=True)[1] * 2
-                    + output[2].data.max(1, keepdim=True)[1]
+                    + output[2]
+                    .data.max(1, keepdim=True)[1]
+                    .cpu()
+                    .apply_(lambda x: 0 if x <= 1 else (1 if x <= 4 else 2))
+                    .to(self.device)
                 ).squeeze()
-                loss = self.criterion(output, [mask, gender, age])
+                loss = self.criterion(
+                    self.config["loss_name"], output, target=[mask, gender, age]
+                )
                 self.valid_metrics.update("loss", loss.item())
                 for met in self.metric_ftns:
                     self.valid_metrics.update(met.__name__, (v := met(pred, target)))

@@ -25,7 +25,8 @@
             "amsgrad": true
         }
     },
-    "loss": "multilabel_loss",
+    "loss": "losses",
+    "loss_name": "multilabel_loss",
     "metrics": [
         "accuracy",
         "f1"
