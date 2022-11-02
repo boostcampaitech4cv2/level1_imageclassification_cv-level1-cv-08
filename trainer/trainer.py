@@ -66,6 +66,7 @@ class Trainer(BaseTrainer):
         )
         self.train_metrics.reset()
         for batch_idx, (data, target) in enumerate(progress):
+            # target[0]: label, target[1]: mask, target[2]: gender, target[3]: age
             data, target, mask, gender, age = (
                 data.to(self.device),
                 target[0].to(self.device),
@@ -76,26 +77,14 @@ class Trainer(BaseTrainer):
 
             self.optimizer.zero_grad()
             output = self.model(data)
-            """
-            output[0].data.max : mask output 중 가장 큰 확률값
-            output[1].data.max : gender output 중 가장 큰 확률값
-            output[2].data.max : age output 중 가장 큰 확률값 -> apply 이용해 0~5의 data loader의 ages 범주를 target에 대응되게 0~2의 범주로 변환 
-            """
+            # output[0]: mask, output[1]: gender, output[2]: age
             pred = (
-                output[0].data.max(1, keepdim=True)[1] * 6
-                + output[1].data.max(1, keepdim=True)[1] * 2
-                + output[2]
-                .data.max(1, keepdim=True)[1]
-                .cpu()
-                .apply_(lambda x: 0 if x <= 1 else (1 if x <= 4 else 2))
-                .to(self.device)
-            ).squeeze()
+                self.get_mask(output) + self.get_gender(output) + self.get_age(output)
+            )
 
-            # loss = self.criterion(output, target)
             loss = self.criterion(
                 self.config["loss_name"], output, target=[mask, gender, age]
             )
-            # loss = loss(output, target)
             loss.backward()
             self.optimizer.step()
             self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
@@ -167,15 +156,12 @@ class Trainer(BaseTrainer):
                 )
 
                 output = self.model(data)
+                # output[0]: mask, output[1]: gender, output[2]: age
                 pred = (
-                    output[0].data.max(1, keepdim=True)[1] * 6
-                    + output[1].data.max(1, keepdim=True)[1] * 2
-                    + output[2]
-                    .data.max(1, keepdim=True)[1]
-                    .cpu()
-                    .apply_(lambda x: 0 if x <= 1 else (1 if x <= 4 else 2))
-                    .to(self.device)
-                ).squeeze()
+                    self.get_mask(output)
+                    + self.get_gender(output)
+                    + self.get_age(output)
+                )
                 loss = self.criterion(
                     self.config["loss_name"], output, target=[mask, gender, age]
                 )
@@ -206,3 +192,14 @@ class Trainer(BaseTrainer):
         )
 
         return batch_log
+
+    def get_age(self, output):
+        return torch.tensor(
+            [0 if x <= 1 else (1 if x <= 4 else 2) for x in torch.argmax(output[2], -1)]
+        ).to(self.device)
+
+    def get_gender(self, output):
+        return torch.argmax(output[1], -1) * 2
+
+    def get_mask(self, output):
+        return torch.argmax(output[0], -1) * 6
