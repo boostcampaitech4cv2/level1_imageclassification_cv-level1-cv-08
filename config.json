@@ -25,8 +25,8 @@
             "amsgrad": true
         }
     },
-    "loss": "losses",
-    "loss_name": "multilabel_loss",
+    "loss": "all_loss",
+    "loss_name": "TripletMarginLoss",
     "metrics": [
         "accuracy",
         "f1"
