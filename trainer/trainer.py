@@ -199,7 +199,7 @@ class Trainer(BaseTrainer):
                 progress.set_postfix(
                     Loss=loss.item(),
                     Acc=acc,
-                    F1=f1,                    
+                    F1=f1,
                 )
         batch_log = self.valid_metrics.result()
         if self.config["wandb"]:
