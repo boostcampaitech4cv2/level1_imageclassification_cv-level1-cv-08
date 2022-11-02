@@ -199,7 +199,7 @@ class Trainer(BaseTrainer):
         ).to(self.device)
 
     def get_gender(self, output):
-        return torch.argmax(output[1], -1) * 2
+        return torch.argmax(output[1], -1) * 3
 
     def get_mask(self, output):
         return torch.argmax(output[0], -1) * 6
