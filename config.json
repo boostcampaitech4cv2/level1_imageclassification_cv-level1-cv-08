@@ -26,7 +26,7 @@
         }
     },
     "loss": "all_loss",
-    "loss_name": "TripletMarginLoss",
+    "loss_name": "multilabel_loss",
     "metrics": [
         "accuracy",
         "f1"

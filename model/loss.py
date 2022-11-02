@@ -27,4 +27,4 @@ def all_loss(loss_name, output, target):
     elif loss_name == "multilabel_loss":
         return multilabel_loss(output, target)
     else:
-        return getattr(losses, loss_name)()(output, target)
+        return getattr(all_loss, loss_name)()(output, target)
