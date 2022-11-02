@@ -40,7 +40,7 @@ def main(CONFIG):
         model = torch.nn.DataParallel(model, device_ids=device_ids)
 
     # get function handles of loss and metrics
-    criterion = getattr(losses, CONFIG["loss"])
+    criterion = getattr(losses, CONFIG["loss"])()
     metrics = [getattr(module_metric, met) for met in CONFIG["metrics"]]
 
     # build optimizer, learning rate scheduler. delete every lines containing lr_scheduler for disabling scheduler
