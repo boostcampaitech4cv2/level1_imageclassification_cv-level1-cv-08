@@ -212,6 +212,9 @@ class Trainer(BaseTrainer):
             wandb.log(
                 {
                     "val/acc": batch_log["accuracy"],
+                    "val/mask_acc": batch_log["mask_accuracy"],
+                    "val/gender_acc": batch_log["gender_accuracy"],
+                    "val/age_acc": batch_log["age_accuracy"],
                     "val/f1": batch_log["f1"],
                     "val/loss": batch_log["loss"],
                 }
