@@ -6,7 +6,9 @@ import torch
 def multilabel_loss(outputs, target):
     loss_mask = nn.CrossEntropyLoss(weight=torch.tensor(([1.4, 7.0, 7.0]))).cuda()
     loss_gender = nn.CrossEntropyLoss(weight=torch.tensor(([1.6285, 2.5912]))).cuda()
-    loss_age = nn.CrossEntropyLoss().cuda()
+    loss_age = nn.CrossEntropyLoss(
+        weight=torch.tensor(([2.8723, 3.9589, 4.5075, 14.0625, 14.0625, 28.4211]))
+    ).cuda()
 
     mask_out, gender_out, age_out = outputs
     mask_target, gender_target, age_target = target
