@@ -54,16 +54,22 @@ def prepare_dataset(files):
         else:
             raise ValueError(f"Invalid gender type {gender}")
 
-        if (age := int(age)) < 30:
+        if (age := int(age)) < 20:
             age = 0
-        elif age < 60:
+        elif age < 30:
             age = 1
-        elif age >= 60:
+        elif age < 40:
             age = 2
+        elif age < 50:
+            age = 3
+        elif age < 60:
+            age = 4
+        elif age >= 60:
+            age = 5
         else:
-            raise ValueError(f"Invalid age {age}")
-
-        label = mask * 6 + gender * 3 + age
+            raise ValueError(f"Invalid age type {age}")
+        ages = {0: 0, 1: 0, 2: 1, 3: 1, 4: 1, 5: 2}
+        label = mask * 6 + gender * 3 + ages[age]
 
         labels.append([label, mask, gender, age])
     return list(zip(files, labels))
@@ -72,7 +78,7 @@ def prepare_dataset(files):
 def make_dataset(stage="train"):
     path = f"/opt/ml/input/data/{stage}"
     if stage == "train":
-        path=path+"/images"
+        path = path + "/images"
         files = glob(f"{path}/*/*.jpg")
         files += glob(f"{path}/*/*.jpeg")
         files += glob(f"{path}/*/*.png")
