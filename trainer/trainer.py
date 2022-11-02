@@ -110,9 +110,6 @@ class Trainer(BaseTrainer):
                 Loss=loss.item(),
                 Acc=acc,
                 F1=f1,
-                mask_accuracy=m_acc,
-                gender_accuracy=g_acc,
-                age_accuracy=a_acc,
             )
             if batch_idx == self.len_epoch:
                 break
@@ -202,10 +199,7 @@ class Trainer(BaseTrainer):
                 progress.set_postfix(
                     Loss=loss.item(),
                     Acc=acc,
-                    F1=f1,
-                    mask_accuracy=m_acc,
-                    gender_accuracy=g_acc,
-                    age_accuracy=a_acc,
+                    F1=f1,                    
                 )
         batch_log = self.valid_metrics.result()
         if self.config["wandb"]:
