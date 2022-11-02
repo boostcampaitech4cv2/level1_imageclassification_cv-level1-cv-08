@@ -27,3 +27,7 @@ def multilabel_loss(outputs, target):
         * Loss_gender(gender_out.squeeze(), gender_target.squeeze().to(torch.long))
         + 0.375 * Loss_age(age_out.squeeze(), age_target.squeeze().to(torch.long))
     )
+
+
+def metrics_loss(loss_name):
+    return losses(getattr, loss_name)
