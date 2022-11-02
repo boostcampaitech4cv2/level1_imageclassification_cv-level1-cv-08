@@ -29,6 +29,9 @@
     "loss_name": "multilabel_loss",
     "metrics": [
         "accuracy",
+        "mask_accuracy",
+        "gender_accuracy",
+        "age_accuracy",
         "f1"
     ],
     "lr_scheduler": {

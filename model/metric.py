@@ -21,3 +21,24 @@ def top_k_acc(output, target, k=3):
 def f1(pred, target):
     with torch.no_grad():
         return f1_score(target.cpu(), pred.cpu(), average="macro")
+
+def mask_accuracy(pred, target):
+    with torch.no_grad():
+        assert pred.shape[0] == len(target)
+        correct = 0
+        correct += torch.sum(pred//6 == target//6).item()
+    return correct / len(target)
+
+def gender_accuracy(pred, target):
+    with torch.no_grad():
+        assert pred.shape[0] == len(target)
+        correct = 0
+        correct += torch.sum(pred%6//3 == target%6//3).item()
+    return correct / len(target)
+
+def age_accuracy(pred, target):
+    with torch.no_grad():
+        assert pred.shape[0] == len(target)
+        correct = 0
+        correct += torch.sum(pred%6%3 == target%6%3).item()
+    return correct / len(target)

@@ -95,12 +95,25 @@ class Trainer(BaseTrainer):
                     f1 = v
                 elif met.__name__ == "accuracy":
                     acc = v
+                elif met.__name__ == "mask_accuracy":
+                    m_acc = v
+                elif met.__name__ == "gender_accuracy":
+                    g_acc = v
+                elif met.__name__ == "age_accuracy":
+                    a_acc = v
             if batch_idx % self.log_step == 0 and self.config["visualize"]:
                 self.writer.add_image(
                     "input", make_grid(data.cpu(), nrow=8, normalize=True)
                 )
 
-            progress.set_postfix(Loss=loss.item(), Acc=acc, F1=f1)
+            progress.set_postfix(
+                Loss=loss.item(),
+                Acc=acc,
+                F1=f1,
+                mask_accuracy=m_acc,
+                gender_accuracy=g_acc,
+                age_accuracy=a_acc,
+            )
             if batch_idx == self.len_epoch:
                 break
         batch_log = self.train_metrics.result()
@@ -108,6 +121,9 @@ class Trainer(BaseTrainer):
             wandb.log(
                 {
                     "train/acc": batch_log["accuracy"],
+                    "train/mask_acc": batch_log["mask_accuracy"],
+                    "train/gender_acc": batch_log["gender_accuracy"],
+                    "train/age_acc": batch_log["age_accuracy"],
                     "train/f1": batch_log["f1"],
                     "train/loss": batch_log["loss"],
                     "Epoch": epoch,
@@ -115,7 +131,7 @@ class Trainer(BaseTrainer):
                 }
             )
         self.logger.info(
-            f"Epoch {epoch:2d} Train... Loss: {batch_log['loss']:4f}// Acc: {batch_log['accuracy']:4f}// F1: {batch_log['f1']:4f}"
+            f"Epoch {epoch:2d} Train... Loss: {batch_log['loss']:4f}// Acc: {batch_log['accuracy']:4f}//m_Acc: {batch_log['mask_accuracy']:4f}// g_Acc: {batch_log['gender_accuracy']:4f}// a_Acc: {batch_log['age_accuracy']:4f}// F1: {batch_log['f1']:4f}"
         )
         if self.do_validation:
             val_log = self._valid_epoch(epoch)
@@ -172,12 +188,25 @@ class Trainer(BaseTrainer):
                         f1 = v
                     elif met.__name__ == "accuracy":
                         acc = v
+                    elif met.__name__ == "mask_accuracy":
+                        m_acc = v
+                    elif met.__name__ == "gender_accuracy":
+                        g_acc = v
+                    elif met.__name__ == "age_accuracy":
+                        a_acc = v
                 if self.config["visualize"]:
                     self.writer.add_image(
                         "input", make_grid(data.cpu(), nrow=8, normalize=True)
                     )
 
-                progress.set_postfix(Loss=loss.item(), Acc=acc, F1=f1)
+                progress.set_postfix(
+                    Loss=loss.item(),
+                    Acc=acc,
+                    F1=f1,
+                    mask_accuracy=m_acc,
+                    gender_accuracy=g_acc,
+                    age_accuracy=a_acc,
+                )
         batch_log = self.valid_metrics.result()
         if self.config["wandb"]:
             wandb.log(
@@ -188,7 +217,7 @@ class Trainer(BaseTrainer):
                 }
             )
         self.logger.info(
-            f"Epoch {epoch:2d} Valid... Loss: {batch_log['loss']:4f}// Acc: {batch_log['accuracy']:4f}// F1: {batch_log['f1']:4f}"
+            f"Epoch {epoch:2d} Train... Loss: {batch_log['loss']:4f}// Acc: {batch_log['accuracy']:4f}//m_Acc: {batch_log['mask_accuracy']:4f}// g_Acc: {batch_log['gender_accuracy']:4f}// a_Acc: {batch_log['age_accuracy']:4f}// F1: {batch_log['f1']:4f}"
         )
 
         return batch_log
@@ -199,7 +228,7 @@ class Trainer(BaseTrainer):
         ).to(self.device)
 
     def get_gender(self, output):
-        return torch.argmax(output[1], -1) * 2
+        return torch.argmax(output[1], -1) * 3
 
     def get_mask(self, output):
         return torch.argmax(output[0], -1) * 6
