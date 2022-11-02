@@ -12,7 +12,6 @@ import model.model as module_arch
 from parse_config import ConfigParser
 from trainer import Trainer
 from utils import prepare_device
-from pytorch_metric_learning import losses
 
 # fix random seeds for reproducibility
 SEED = 42
