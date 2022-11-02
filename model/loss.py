@@ -4,18 +4,17 @@ import torch
 
 
 def multilabel_loss(outputs, target):
-    Loss_mask = nn.CrossEntropyLoss(weight=torch.tensor(([1.4, 7.0, 7.0]))).cuda()
-    Loss_gender = nn.CrossEntropyLoss(weight=torch.tensor(([1.6285, 2.5912]))).cuda()
-    Loss_age = nn.CrossEntropyLoss().cuda()
+    loss_mask = nn.CrossEntropyLoss(weight=torch.tensor(([1.4, 7.0, 7.0]))).cuda()
+    loss_gender = nn.CrossEntropyLoss(weight=torch.tensor(([1.6285, 2.5912]))).cuda()
+    loss_age = nn.CrossEntropyLoss().cuda()
 
     mask_out, gender_out, age_out = outputs
     mask_target, gender_target, age_target = target
 
     return (
-        0.375 * Loss_mask(mask_out.squeeze(), mask_target.squeeze().to(torch.long))
-        + 0.25
-        * Loss_gender(gender_out.squeeze(), gender_target.squeeze().to(torch.long))
-        + 0.375 * Loss_age(age_out.squeeze(), age_target.squeeze().to(torch.long))
+        0.375 * loss_mask(mask_out, mask_target)
+        + 0.25 * loss_gender(gender_out, gender_target)
+        + 0.375 * loss_age(age_out, age_target)
     )
 
 
