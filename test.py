@@ -9,6 +9,8 @@ import data_loader.data_loaders as module_data
 import model.model as module_arch
 from parse_config import ConfigParser
 
+from rich import print
+
 
 def main(CONFIG):
     logger = CONFIG.get_logger("test")
@@ -20,7 +22,7 @@ def main(CONFIG):
         batch_size=CONFIG["data_loader"]["args"]["batch_size"],
         num_workers=CONFIG["data_loader"]["args"]["num_workers"],
     )
-    
+
     # build model architecture
     model = CONFIG.init_obj("arch", module_arch)
     logger.info(CONFIG["arch"]["args"]["model_name"])

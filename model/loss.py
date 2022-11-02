@@ -69,3 +69,28 @@ class F1Loss(nn.Module):
         f1 = 2 * (precision * recall) / (precision + recall + self.epsilon)
         f1 = f1.clamp(min=self.epsilon, max=1 - self.epsilon)
         return 1 - f1.mean()
+
+
+_criterion_entrypoints = {
+    "cross_entropy": nn.CrossEntropyLoss,
+    "focal": FocalLoss,
+    "label_smoothing": LabelSmoothingLoss,
+    "f1": F1Loss,
+}
+
+
+def criterion_entrypoint(criterion_name):
+    return _criterion_entrypoints[criterion_name]
+
+
+def is_criterion(criterion_name):
+    return criterion_name in _criterion_entrypoints
+
+
+def create_criterion(criterion_name, **kwargs):
+    if is_criterion(criterion_name):
+        create_fn = criterion_entrypoint(criterion_name)
+        criterion = create_fn(**kwargs)
+    else:
+        raise RuntimeError("Unknown loss (%s)" % criterion_name)
+    return criterion

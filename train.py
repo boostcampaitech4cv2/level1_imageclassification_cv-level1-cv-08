@@ -13,6 +13,8 @@ from parse_config import ConfigParser
 from trainer import Trainer
 from utils import prepare_device
 
+from rich import print
+
 # fix random seeds for reproducibility
 SEED = 42
 torch.manual_seed(SEED)
@@ -39,6 +41,7 @@ def main(CONFIG):
         model = torch.nn.DataParallel(model, device_ids=device_ids)
 
     # get function handles of loss and metrics
+    # criterion = module_loss.create_criterion(CONFIG["loss"])
     criterion = getattr(module_loss, CONFIG["loss"])
     metrics = [getattr(module_metric, met) for met in CONFIG["metrics"]]
 
