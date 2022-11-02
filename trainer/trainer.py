@@ -140,6 +140,7 @@ class Trainer(BaseTrainer):
                 output = self.model(data)
                 pred = torch.argmax(output, dim=1)
                 loss = self.criterion(output, target)
+                # loss = loss(output, target)
                 self.valid_metrics.update("loss", loss.item())
                 for met in self.metric_ftns:
                     self.valid_metrics.update(met.__name__, (v := met(pred, target)))
