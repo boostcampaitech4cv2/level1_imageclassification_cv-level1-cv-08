@@ -25,7 +25,7 @@
             "amsgrad": true
         }
     },
-    "loss": "ce_loss",
+    "loss": "multilabel_loss",
     "metrics": [
         "accuracy",
         "f1"

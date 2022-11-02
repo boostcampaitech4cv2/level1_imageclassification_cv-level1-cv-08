@@ -62,7 +62,6 @@ def prepare_dataset(files):
             age = 2
         else:
             raise ValueError(f"Invalid age {age}")
-
         label = mask * 6 + gender * 3 + age
 
         labels.append([label, mask, gender, age])
@@ -72,7 +71,7 @@ def prepare_dataset(files):
 def make_dataset(stage="train"):
     path = f"/opt/ml/input/data/{stage}"
     if stage == "train":
-        path=path+"/images"
+        path = path + "/images"
         files = glob(f"{path}/*/*.jpg")
         files += glob(f"{path}/*/*.jpeg")
         files += glob(f"{path}/*/*.png")

@@ -34,9 +34,7 @@ class TimmModelMulti(nn.Module):
     def __init__(self, model_name="efficientnetv2_rw_s", pretrained=True):
         super().__init__()
         self.model = timm.create_model(model_name, pretrained=pretrained)
-        self.model.classifier = nn.Sequential(
-            nn.MaxPool1d(4, stride=4), MultiClassFc(448)
-        )
+        self.model.classifier = nn.Sequential(MultiClassFc(1792))
 
     def forward(self, x):
         mask, gender, age = self.model(x)
@@ -58,8 +56,5 @@ class MultiClassFc(nn.Module):
 
     def make_out_layer(self, backbone_dim, num_class):
         return nn.Sequential(
-            nn.Linear(backbone_dim, 128),
-            nn.BatchNorm1d(128),
-            nn.ReLU(),
-            nn.Linear(128, num_class),
+            nn.Linear(1792, num_class),
         )

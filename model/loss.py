@@ -1,4 +1,6 @@
 import torch.nn.functional as F
+import torch.nn as nn
+import torch
 
 
 def nll_loss(output, target):
@@ -17,7 +19,7 @@ def multilabel_loss(outputs, target):
     ).cuda()
 
     mask_out, gender_out, age_out = outputs
-    mask_target, gender_target, age_target = torch.split(target, 1, dim=1)
+    mask_target, gender_target, age_target = target
 
     return (
         0.375 * Loss_mask(mask_out.squeeze(), mask_target.squeeze().to(torch.long))

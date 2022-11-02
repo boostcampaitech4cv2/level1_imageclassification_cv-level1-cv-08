@@ -76,9 +76,13 @@ class Trainer(BaseTrainer):
 
             self.optimizer.zero_grad()
             output = self.model(data)
-            pred = torch.argmax(output, dim=1)
+            pred = (
+                output[0].data.max(1, keepdim=True)[1] * 6
+                + output[1].data.max(1, keepdim=True)[1] * 2
+                + output[2].data.max(1, keepdim=True)[1]
+            ).squeeze()
 
-            loss = self.criterion(output, target)
+            loss = self.criterion(output, [mask, gender, age])
             loss.backward()
             self.optimizer.step()
             self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
@@ -141,11 +145,21 @@ class Trainer(BaseTrainer):
         with torch.no_grad():
             for data, target in progress:
                 # target[0]: label, target[1]: mask, target[2]: gender, target[3]: age
-                data, target = data.to(self.device), target[0].to(self.device)
+                data, target, mask, gender, age = (
+                    data.to(self.device),
+                    target[0].to(self.device),
+                    target[1].to(self.device),
+                    target[2].to(self.device),
+                    target[3].to(self.device),
+                )
 
                 output = self.model(data)
-                pred = torch.argmax(output, dim=1)
-                loss = self.criterion(output, target)
+                pred = (
+                    output[0].data.max(1, keepdim=True)[1] * 6
+                    + output[1].data.max(1, keepdim=True)[1] * 2
+                    + output[2].data.max(1, keepdim=True)[1]
+                ).squeeze()
+                loss = self.criterion(output, [mask, gender, age])
                 self.valid_metrics.update("loss", loss.item())
                 for met in self.metric_ftns:
                     self.valid_metrics.update(met.__name__, (v := met(pred, target)))
