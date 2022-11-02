@@ -46,7 +46,7 @@ class MultiClassFc(nn.Module):
         super().__init__()
         self.mask_out = self.make_out_layer(backbone_dim, 3)
         self.gender_out = self.make_out_layer(backbone_dim, 2)
-        self.age_out = self.make_out_layer(backbone_dim, 3)
+        self.age_out = self.make_out_layer(backbone_dim, 6)
 
     def forward(self, x):
         mask_out = self.mask_out(x)

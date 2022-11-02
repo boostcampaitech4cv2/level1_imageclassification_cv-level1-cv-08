@@ -54,15 +54,22 @@ def prepare_dataset(files):
         else:
             raise ValueError(f"Invalid gender type {gender}")
 
-        if (age := int(age)) < 30:
+        if (age := int(age)) < 20:
             age = 0
-        elif age < 60:
+        elif age < 30:
             age = 1
-        elif age >= 60:
+        elif age < 40:
             age = 2
+        elif age < 50:
+            age = 3
+        elif age < 60:
+            age = 4
+        elif age >= 60:
+            age = 5
         else:
-            raise ValueError(f"Invalid age {age}")
-        label = mask * 6 + gender * 3 + age
+            raise ValueError(f"Invalid age type {age}")
+        ages = {0: 0, 1: 0, 2: 1, 3: 1, 4: 1, 5: 2}
+        label = mask * 6 + gender * 3 + ages[age]
 
         labels.append([label, mask, gender, age])
     return list(zip(files, labels))
@@ -103,10 +110,28 @@ def setup(
 ):
     train_transform = Compose(
         [
-            # A.CenterCrop(356, 356, p=0.5),
-            # A.Affine(),
             A.Resize(input_size, input_size),
+            A.ShiftScaleRotate(shift_limit=0.1, scale_limit=0.1, rotate_limit=5, p=0.5),
+            A.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, p=0.5),
             A.HorizontalFlip(p=0.5),
+            A.OneOf(
+                [
+                    A.MotionBlur(blur_limit=3, p=0.7),
+                    A.MedianBlur(blur_limit=3, p=0.7),
+                    A.GaussianBlur(blur_limit=3, p=0.7),
+                    A.GaussNoise(var_limit=(3.0, 9.0), p=0.7),
+                ],
+                p=0.5,
+            ),
+            A.CoarseDropout(
+                max_holes=10,
+                max_height=20,
+                max_width=20,
+                min_holes=1,
+                min_height=3,
+                min_width=3,
+                p=0.5,
+            ),
             A.Normalize(),
             ToTensorV2(),
         ]
