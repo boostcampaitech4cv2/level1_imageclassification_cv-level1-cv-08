@@ -12,6 +12,7 @@ import model.model as module_arch
 from parse_config import ConfigParser
 from trainer import Trainer
 from utils import prepare_device
+from pytorch_metric_learning import losses
 
 # fix random seeds for reproducibility
 SEED = 42
@@ -39,7 +40,7 @@ def main(CONFIG):
         model = torch.nn.DataParallel(model, device_ids=device_ids)
 
     # get function handles of loss and metrics
-    criterion = getattr(module_loss, CONFIG["loss"])
+    criterion = getattr(losses, CONFIG["loss"])
     metrics = [getattr(module_metric, met) for met in CONFIG["metrics"]]
 
     # build optimizer, learning rate scheduler. delete every lines containing lr_scheduler for disabling scheduler
@@ -94,7 +95,7 @@ if __name__ == "__main__":
     args.add_argument(
         "-c",
         "--config",
-        default="./config.json",
+        default="/opt/ml/level1_imageclassification_cv-level1-cv-08/config.json",
         type=str,
         help="config file path (default: None)",
     )
