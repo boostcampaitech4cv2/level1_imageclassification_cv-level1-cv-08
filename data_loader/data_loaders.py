@@ -136,7 +136,9 @@ def setup(
     if stage == "eval":
         print("eval dataset loading")
         test_set = make_dataset(stage)
-        test_set = CustomDataset(test_set, test=True, transform=test_transform)
+        test_set = CustomDataset(
+            test_set, test=True, transform=test_transform(input_size)
+        )
         return DataLoader(
             test_set,
             batch_size,
