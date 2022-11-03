@@ -79,8 +79,8 @@ def main(config, filename):
     model.eval()
 
     #for age correction(3)
-    checkpoint_age = torch.load('saved/models/efficent_age_3_ce/1027_085554/model_best.pth')
-    # checkpoint_age = torch.load('saved/models/efficent_age_3_ce/1028_010443/model_best.pth')
+    checkpoint_age = torch.load('saved/models/efficent_age_3_ce_newnorm/1103_020405/checkpoint-epoch25.pth')
+    # checkpoint_age = torch.load('saved/models/efficent_age_3_ce/1027_085554/model_best.pth') #best
     state_dict_age = checkpoint_age['state_dict']
     model_age = config.init_obj('arch_age_3', module_arch) #timm.create_model('efficientnet_b4', pretrained=True, num_classes=3)
     # model_age = config.init_obj('arch_age_b7', module_arch) #timm.create_model('efficientnet_b4', pretrained=True, num_classes=3)
@@ -241,7 +241,7 @@ if __name__ == '__main__':
                       help='path to latest checkpoint (default: None)')
     args.add_argument('-d', '--device', default=None, type=str,
                       help='indices of GPUs to enable (default: all)')
-    args.add_argument('-n', '--name', default='eff_22_fin_agecorr_org', type=str)
+    args.add_argument('-n', '--name', default='eff_22_fin_agecorr_up', type=str)
 
     config = ConfigParser.from_args(args)
 

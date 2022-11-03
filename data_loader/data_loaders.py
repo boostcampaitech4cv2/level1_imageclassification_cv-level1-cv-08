@@ -52,7 +52,8 @@ class L1DataLoader_kind(BaseDataLoader):
         trsfm = transforms.Compose([
             transforms.ToTensor(),
             transforms.RandomHorizontalFlip(),              
-            transforms.RandomAffine(0, shear=10, scale=(0.8,1.2)),
+            transforms.RandomAffine(0, shear=5, scale=(0.9,1.1)),
+            transforms.ColorJitter(brightness=(0.5,1.5),contrast=(1),saturation=(0.5,1.5),hue=(-0.1,0.1)),
             transforms.Normalize((0.1307,), (0.3081,)),
             # transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.2, 0.2, 0.2)),
         ])
