@@ -21,10 +21,10 @@ def multilabel_loss(outputs, target):
     )
 
 
-
-def all_loss(loss_name, output, target):
+def all_loss(loss_name, output, target, inner_weight, loss_weight):
+    if inner_weight:
+        inner_weight = torch.tensor((inner_weight)).cuda()
     if loss_name == "ce_loss":
         return F.cross_entropy(output, target, weight=inner_weight) * loss_weight
     else:
         return getattr(all_loss, loss_name)()(output, target) * loss_weight
-
