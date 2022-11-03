@@ -1,14 +1,14 @@
 import re
 from glob import glob
 from torch.utils.data import DataLoader, Dataset
-import albumentations as A
-from albumentations.core.composition import Compose
-from albumentations.pytorch import ToTensorV2
+
 import multiprocessing
 import cv2
 from sklearn.model_selection import train_test_split
 import pandas as pd
 import os
+
+from data_loader.transform import train_transform, test_transform
 
 
 class CustomDataset(Dataset):
@@ -108,48 +108,13 @@ def setup(
     batch_size=32,
     num_workers=4,
 ):
-    train_transform = Compose(
-        [
-            A.Resize(input_size, input_size),
-            A.ShiftScaleRotate(shift_limit=0.1, scale_limit=0.1, rotate_limit=5, p=0.5),
-            A.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, p=0.5),
-            A.HorizontalFlip(p=0.5),
-            A.OneOf(
-                [
-                    A.MotionBlur(blur_limit=3, p=0.7),
-                    A.MedianBlur(blur_limit=3, p=0.7),
-                    A.GaussianBlur(blur_limit=3, p=0.7),
-                    A.GaussNoise(var_limit=(3.0, 9.0), p=0.7),
-                ],
-                p=0.5,
-            ),
-            A.CoarseDropout(
-                max_holes=10,
-                max_height=20,
-                max_width=20,
-                min_holes=1,
-                min_height=3,
-                min_width=3,
-                p=0.3,
-            ),
-            A.Normalize(),
-            ToTensorV2(),
-        ]
-    )
-    test_transform = Compose(
-        [
-            A.Resize(input_size, input_size),
-            A.Normalize(),
-            ToTensorV2(),
-        ]
-    )
 
     if stage == "train":
         print("train dataset loading")
         train_set, valid_set = make_dataset(stage)
 
-        train_set = CustomDataset(train_set, transform=train_transform)
-        valid_set = CustomDataset(valid_set, transform=test_transform)
+        train_set = CustomDataset(train_set, transform=train_transform(input_size))
+        valid_set = CustomDataset(valid_set, transform=test_transform(input_size))
 
         train_dataloader = DataLoader(
             train_set,

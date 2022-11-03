@@ -151,6 +151,7 @@ class Trainer(BaseTrainer):
         with torch.no_grad():
             for data, target in progress:
                 # target[0]: label, target[1]: mask, target[2]: gender, target[3]: age
+
                 data, target, mask, gender, age = (
                     data.to(self.device),
                     target[0].to(self.device),

@@ -2,10 +2,11 @@
     "name": "Mask_base",
     "n_gpu": 1,
     "arch": {
-        "type": "TimmModelMulti",
+        "type": "TimmModel",
         "args": {
             "model_name": "efficientnetv2_rw_s",
-            "pretrained": true
+            "pretrained": true,
+            "num_classes": 18
         }
     },
     "data_loader": {
@@ -31,6 +32,7 @@
         ["ce_loss" , [1.6285, 2.5912], 0.25],
         ["ce_loss" , [2.8723, 3.9589, 4.5075, 14.0625, 14.0625, 28.4211], 0.375]
     ],
+
     "metrics": [
         "accuracy",
         "f1"
