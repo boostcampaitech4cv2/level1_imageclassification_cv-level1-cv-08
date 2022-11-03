@@ -50,7 +50,7 @@ def main(CONFIG):
         for data in progress:
             data = data.to(device)
             output = model(data)
-            pred = pred = get_mask(output) + get_gender(output) + get_age(output)
+            pred = get_mask(output) + get_gender(output) + get_age(output)
             preds.extend(pred.detach().cpu().numpy())
 
             #
