@@ -1,10 +1,19 @@
 import numpy as np
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
 from torchvision.utils import make_grid
 from tqdm import tqdm
 import wandb
 from base import BaseTrainer
 from utils import inf_loop, MetricTracker, get_age, get_gender, get_mask
+from TRACER.model.TRACER import TRACER
+from TRACER.util.utils import load_pretrained
+from TRACER.config import getConfig
+import cv2
+from torchvision import transforms
+import os
+from datetime import datetime
 
 
 class Trainer(BaseTrainer):
@@ -51,6 +60,10 @@ class Trainer(BaseTrainer):
             *[m.__name__ for m in self.metric_ftns],
             writer=self.writer,
         )
+        self.args = getConfig()
+        self.tracer = nn.DataParallel(TRACER(self.args)).to(device)
+        path = load_pretrained(f"TE-{self.args.arch}")
+        self.tracer.load_state_dict(path)
 
     def _train_epoch(self, epoch):
         """
@@ -68,7 +81,7 @@ class Trainer(BaseTrainer):
             ascii=True,
         )
         self.train_metrics.reset()
-        for batch_idx, (data, target) in enumerate(progress):
+        for batch_idx, (data, original_size, target) in enumerate(progress):
             # target[0]: label, target[1]: mask, target[2]: gender, target[3]: age
             data, target, mask, gender, age = (
                 data.to(self.device),
@@ -79,7 +92,9 @@ class Trainer(BaseTrainer):
             )
             feature_labels = [mask, gender, age]
             self.optimizer.zero_grad()
-            outputs = self.model(data)
+            faces = self.setup_face(data, original_size)
+
+            outputs = self.model(faces)
             # output[0]: mask, output[1]: gender, output[2]: age
             pred = (
                 get_mask(outputs) + get_gender(outputs) + get_age(outputs, self.device)
@@ -162,7 +177,7 @@ class Trainer(BaseTrainer):
             ascii=True,
         )
         with torch.no_grad():
-            for data, target in progress:
+            for (data, original_size, target) in progress:
                 # target[0]: label, target[1]: mask, target[2]: gender, target[3]: age
 
                 data, target, mask, gender, age = (
@@ -225,3 +240,98 @@ class Trainer(BaseTrainer):
         )
 
         return batch_log
+
+    def denormalize(self, image):
+        inv_norm = transforms.Compose(
+            [
+                transforms.Normalize(
+                    mean=[0.0, 0.0, 0.0], std=[1 / 0.229, 1 / 0.224, 1 / 0.225]
+                ),
+                transforms.Normalize(
+                    mean=[-0.485, -0.456, -0.406], std=[1.0, 1.0, 1.0]
+                ),
+            ]
+        )
+        return inv_norm(image)
+
+    def setup_face(self, data, original_size):
+        no_bg, _, _ = self.tracer(data)
+        H, W = original_size
+        faces = self.make_face(H, W, no_bg, data)
+        faces = faces.to(self.device)
+        return faces
+
+    def masking(self, original_image, masking, height, width):
+        original_image = self.denormalize(original_image)
+
+        original_image = F.interpolate(
+            original_image.unsqueeze(0), size=(height, width), mode="bilinear"
+        )
+        original_image = (
+            original_image.squeeze().permute(1, 2, 0).detach().cpu().numpy() * 255.0
+        ).astype(np.uint8)
+        original_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB)
+        self.original_image = original_image
+
+        masking = cv2.bitwise_and(original_image, original_image, mask=masking)
+        return masking
+
+    def make_face(self, H, W, no_bg, data):
+        faces = []
+        for i in range(data.size(0)):
+            h, w = H[i].item(), W[i].item()
+            output = F.interpolate(no_bg[i].unsqueeze(0), size=(h, w), mode="bilinear")
+
+            output = (output.squeeze().detach().cpu().numpy() * 255.0).astype(np.uint8)
+            salient_objects = self.masking(data[i], output, h, w)
+            face = self.filter_face(salient_objects)
+            face = self.cut_face(face)
+
+            faces.append(face)
+        return torch.stack(faces)
+
+    def filter_face(self, img):
+        imgray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+        # 스레시홀드로 바이너리 이미지로 만들어서 검은배경에 흰색전경으로 반전
+        _, imthres = cv2.threshold(imgray, 0, 255, cv2.THRESH_BINARY)
+
+        contours, _ = cv2.findContours(
+            imthres, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+        )
+        if len(contours) > 1:
+            contour_sizes = [(cv2.contourArea(ctr), ctr) for ctr in contours]
+            max_contour = max(contour_sizes, key=lambda x: x[0])[1]
+        elif len(contours) == 1:
+            max_contour = contours[0]
+        else:
+            return self.original_image
+
+        # 결과 출력
+        tmp_img = np.zeros_like(img)
+        cv2.drawContours(tmp_img, [max_contour], 0, (255, 255, 255), cv2.FILLED)
+        tmp_img = cv2.bitwise_and(img, tmp_img)
+        return tmp_img
+
+    def cut_face(self, face):
+        face_gray = cv2.cvtColor(face, cv2.COLOR_BGR2GRAY)
+        positions = np.nonzero(face_gray)
+        top, bottom = positions[0].min(), positions[0].max()
+        left, right = positions[1].min(), positions[1].max()
+        face = face[top:bottom, left:right]
+        # cv2.imwrite(
+        #     os.path.join(os.getcwd(), "object", f"{str(datetime.now())}.png"),
+        #     face,
+        # )
+
+        face = self.data_loader.dataset.transform(image=face)["image"]
+        return face
+
+        # salient_object = self.post_processing(data[i], output, h, w)
+        # cv2.imwrite(
+        #     os.path.join(os.getcwd(), "mask", f"{target[i]}.png"),
+        #     output,
+        # )
+        # cv2.imwrite(
+        #     os.path.join(os.getcwd(), "object", f"{target[i]}.png"),
+        #     salient_object,
+        # )
