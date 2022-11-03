@@ -42,10 +42,14 @@ class Trainer(BaseTrainer):
         self.log_step = int(np.sqrt(data_loader.batch_size))
 
         self.train_metrics = MetricTracker(
-            "loss", *[m.__name__ for m in self.metric_ftns], writer=self.writer
+            *["loss", "mask_loss", "gender_loss", "age_loss"],
+            *[m.__name__ for m in self.metric_ftns],
+            writer=self.writer,
         )
         self.valid_metrics = MetricTracker(
-            "loss", *[m.__name__ for m in self.metric_ftns], writer=self.writer
+            *["loss", "mask_loss", "gender_loss", "age_loss"],
+            *[m.__name__ for m in self.metric_ftns],
+            writer=self.writer,
         )
 
     def _train_epoch(self, epoch):
@@ -88,11 +92,18 @@ class Trainer(BaseTrainer):
                     self.config["loss_name"], outputs, feature_labels
                 )
             ]
+            mask_loss = loss_list[0]
+            gender_loss = loss_list[1]
+            age_loss = loss_list[2]
+
             loss = sum(loss_list)
             loss.backward()
             self.optimizer.step()
             self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
             self.train_metrics.update("loss", loss.item())
+            self.train_metrics.update("mask_loss", mask_loss.item())
+            self.train_metrics.update("gender_loss", gender_loss.item())
+            self.train_metrics.update("age_loss", age_loss.item())
             for met in self.metric_ftns:
                 self.train_metrics.update(met.__name__, (v := met(pred, target)))
                 if met.__name__ == "f1":
@@ -113,7 +124,10 @@ class Trainer(BaseTrainer):
                 {
                     "train/acc": batch_log["accuracy"],
                     "train/f1": batch_log["f1"],
-                    "train/loss": batch_log["loss"],
+                    "train/total_loss": batch_log["loss"],
+                    "train/mask_loss": batch_log["mask_loss"],
+                    "train/gender_loss": batch_log["gender_loss"],
+                    "train/age_loss": batch_log["age_loss"],
                     "Epoch": epoch,
                     "Learning Rate": self.optimizer.param_groups[0]["lr"],
                 }
@@ -173,8 +187,15 @@ class Trainer(BaseTrainer):
                         self.config["loss_name"], outputs, feature_labels
                     )
                 ]
+                mask_loss = loss_list[0]
+                gender_loss = loss_list[1]
+                age_loss = loss_list[2]
+
                 loss = sum(loss_list)
                 self.valid_metrics.update("loss", loss.item())
+                self.train_metrics.update("mask_loss", mask_loss.item())
+                self.train_metrics.update("gender_loss", gender_loss.item())
+                self.train_metrics.update("age_loss", age_loss.item())
                 for met in self.metric_ftns:
                     self.valid_metrics.update(met.__name__, (v := met(pred, target)))
                     if met.__name__ == "f1":
@@ -193,7 +214,10 @@ class Trainer(BaseTrainer):
                 {
                     "val/acc": batch_log["accuracy"],
                     "val/f1": batch_log["f1"],
-                    "val/loss": batch_log["loss"],
+                    "val/total_loss": batch_log["loss"],
+                    "val/mask_loss": batch_log["mask_loss"],
+                    "val/gender_loss": batch_log["gender_loss"],
+                    "val/age_loss": batch_log["age_loss"],
                 }
             )
         self.logger.info(
