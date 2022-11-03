@@ -23,10 +23,7 @@ def multilabel_loss(outputs, target):
 
 
 def all_loss(loss_name, output, target):
-
-    if loss_name == "nll_loss":
-        return F.nll_loss(output, target, weight=inner_weight) * loss_weight
-    elif loss_name == "ce_loss":
+    if loss_name == "ce_loss":
         return F.cross_entropy(output, target, weight=inner_weight) * loss_weight
     else:
         return getattr(all_loss, loss_name)()(output, target) * loss_weight
