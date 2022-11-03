@@ -4,7 +4,7 @@ from torchvision.utils import make_grid
 from tqdm import tqdm
 import wandb
 from base import BaseTrainer
-from utils import inf_loop, MetricTracker
+from utils import inf_loop, MetricTracker, get_age, get_gender, get_mask
 
 
 class Trainer(BaseTrainer):
@@ -75,12 +75,9 @@ class Trainer(BaseTrainer):
             )
             feature_labels = [mask, gender, age]
             self.optimizer.zero_grad()
-            output = self.model(data)
-            outputs = [output[0], output[1], output[2]]
+            outputs = self.model(data)
             # output[0]: mask, output[1]: gender, output[2]: age
-            pred = (
-                self.get_mask(output) + self.get_gender(output) + self.get_age(output)
-            )
+            pred = get_mask(outputs) + get_gender(outputs) + get_age(outputs)
 
             # if you don't need inner_weight, please set null in config.json.
             loss_list = [
@@ -160,14 +157,9 @@ class Trainer(BaseTrainer):
                     target[3].to(self.device),
                 )
                 feature_labels = [mask, gender, age]
-                output = self.model(data)
-                outputs = [output[0], output[1], output[2]]
+                outputs = self.model(data)
                 # output[0]: mask, output[1]: gender, output[2]: age
-                pred = (
-                    self.get_mask(output)
-                    + self.get_gender(output)
-                    + self.get_age(output)
-                )
+                pred = get_mask(outputs) + get_gender(outputs) + get_age(outputs)
 
                 loss_list = [
                     self.criterion(name, output, feature, inner_weight, loss_weight)
@@ -203,14 +195,3 @@ class Trainer(BaseTrainer):
         )
 
         return batch_log
-
-    def get_age(self, output):
-        return torch.tensor(
-            [0 if x <= 1 else (1 if x <= 4 else 2) for x in torch.argmax(output[2], -1)]
-        ).to(self.device)
-
-    def get_gender(self, output):
-        return torch.argmax(output[1], -1) * 3
-
-    def get_mask(self, output):
-        return torch.argmax(output[0], -1) * 6

@@ -74,3 +74,17 @@ class MetricTracker:
 
     def result(self):
         return dict(self._data.average)
+
+
+def get_age(output, device):
+    return torch.tensor(
+        [0 if x <= 1 else (1 if x <= 4 else 2) for x in torch.argmax(output[2], -1)]
+    ).to(device)
+
+
+def get_gender(output):
+    return torch.argmax(output[1], -1) * 3
+
+
+def get_mask(output):
+    return torch.argmax(output[0], -1) * 6

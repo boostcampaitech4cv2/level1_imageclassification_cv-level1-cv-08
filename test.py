@@ -8,6 +8,7 @@ import pandas as pd
 import data_loader.data_loaders as module_data
 import model.model as module_arch
 from parse_config import ConfigParser
+from utils import get_age, get_gender, get_mask
 
 
 def main(CONFIG):
@@ -20,7 +21,7 @@ def main(CONFIG):
         batch_size=CONFIG["data_loader"]["args"]["batch_size"],
         num_workers=CONFIG["data_loader"]["args"]["num_workers"],
     )
-    
+
     # build model architecture
     model = CONFIG.init_obj("arch", module_arch)
     logger.info(CONFIG["arch"]["args"]["model_name"])
@@ -50,7 +51,8 @@ def main(CONFIG):
         for data in progress:
             data = data.to(device)
             output = model(data)
-            pred = torch.argmax(output, dim=1)
+            # output[0]: mask, output[1]: gender, output[2]: age
+            pred = get_mask(output) + get_gender(output) + get_age(output, device)
             preds.extend(pred.detach().cpu().numpy())
 
             #
@@ -81,7 +83,7 @@ if __name__ == "__main__":
     args.add_argument(
         "-r",
         "--resume",
-        default="saved/models/Mask_base/10.29_21:05:55/last_epoch15.pth",
+        default=None,
         type=str,
         help="path to latest checkpoint (default: None)",
     )
