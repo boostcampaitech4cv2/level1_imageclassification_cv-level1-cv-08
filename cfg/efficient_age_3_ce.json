@@ -1,5 +1,5 @@
 {
-    "name": "efficent_age_3_ce",
+    "name": "efficent_age_3_ce_newnorm",
     "n_gpu": 1,
 
     "arch": {

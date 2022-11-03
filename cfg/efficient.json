@@ -22,10 +22,17 @@
             "num_classes": 3
         }
     },    
-    "arch_age_b7": {
+    "arch_gender": {
         "type": "TimmModel",
         "args": {
-            "model_name": "efficientnet_b7",
+            "model_name": "efficientnet_b4",
+            "num_classes": 2
+        }
+    },       
+    "arch_mask": {
+        "type": "TimmModel",
+        "args": {
+            "model_name": "efficientnet_b4",
             "num_classes": 3
         }
     }, 

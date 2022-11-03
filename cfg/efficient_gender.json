@@ -1,19 +1,20 @@
 {
-    "name": "resnet_focal",
+    "name": "efficent_gender",
     "n_gpu": 1,
 
     "arch": {
         "type": "TimmModel",
         "args": {
-            "model_name": "resnet50"
+            "model_name": "efficientnet_b4",
+            "num_classes": 2
         }
     },
     "data_loader": {
         "type": "L1DataLoader_kind",
         "args":{
-            "kind": "all",
+            "kind": "gender",
             "data_dir": "/opt/ml/input/data/train/",
-            "batch_size": 64,
+            "batch_size": 32,
             "shuffle": true,
             "validation_split": 0.1,
             "num_workers": 2
@@ -27,7 +28,7 @@
             "amsgrad": true
         }
     },
-    "loss": "fc_loss",
+    "loss": "ce_loss",
     "metrics": [
         "accuracy", "top_k_acc"
     ],
@@ -46,7 +47,7 @@
         "verbosity": 2,
         
         "monitor": "min val_loss",
-        "early_stop": 10,
+        "early_stop": 5,
 
         "tensorboard": false
     }

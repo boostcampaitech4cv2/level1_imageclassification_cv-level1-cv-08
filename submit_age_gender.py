@@ -78,24 +78,21 @@ def main(config, filename):
     model = model.to(device)
     model.eval()
 
+    #for gender correction(2)
+    checkpoint_gender = torch.load('saved/models/efficent_gender/1102_233025/model_best.pth')
+    state_dict_gender = checkpoint_gender['state_dict']
+    model_gender = config.init_obj('arch_gender', module_arch)
+    model_gender.load_state_dict(state_dict_gender)
+    model_gender = model_gender.to(device)
+    model_gender.eval()
+
     #for age correction(3)
     checkpoint_age = torch.load('saved/models/efficent_age_3_ce/1027_085554/model_best.pth')
-    # checkpoint_age = torch.load('saved/models/efficent_age_3_ce/1028_010443/model_best.pth')
     state_dict_age = checkpoint_age['state_dict']
-    model_age = config.init_obj('arch_age_3', module_arch) #timm.create_model('efficientnet_b4', pretrained=True, num_classes=3)
-    # model_age = config.init_obj('arch_age_b7', module_arch) #timm.create_model('efficientnet_b4', pretrained=True, num_classes=3)
+    model_age = config.init_obj('arch_age_3', module_arch)
     model_age.load_state_dict(state_dict_age)
     model_age = model_age.to(device)
     model_age.eval()
-
-    #for age correction(100)
-    # checkpoint_age = torch.load('saved/models/efficent_age/1027_042942/model_best.pth')
-    # state_dict_age = checkpoint_age['state_dict']
-    # model_age = config.init_obj('arch_age_100', module_arch) #timm.create_model('efficientnet_b4', pretrained=True, num_classes=3)
-    # model_age.load_state_dict(state_dict_age)
-    # model_age = model_age.to(device)
-    # model_age.eval()
-
 
     all_predictions = []
     actual, deep_features = [], []
@@ -120,7 +117,10 @@ def main(config, filename):
             # print(mask, gender, age)
             outputs_age = model_age(images)
             pred_age = outputs_age.argmax(dim=-1)
-            pred = encoder(mask, gender, pred_age)
+
+            outputs_gender = model_gender(images)
+            pred_gender = outputs_gender.argmax(dim=-1)
+            pred = encoder(mask, pred_gender, pred_age)
 
             # for age(100)
             # if pred_age < 30:   pred = encoder(mask, gender, 0)
@@ -129,10 +129,9 @@ def main(config, filename):
 
             all_predictions.extend(pred.cpu().numpy())
 
-
             #for t-SNE
             deep_features += outputs.cpu().tolist()
-            _, preds = torch.max(outputs, 1)    
+            # _, preds = torch.max(outputs, 1)    
 
             actual = all_predictions
 
@@ -241,7 +240,7 @@ if __name__ == '__main__':
                       help='path to latest checkpoint (default: None)')
     args.add_argument('-d', '--device', default=None, type=str,
                       help='indices of GPUs to enable (default: all)')
-    args.add_argument('-n', '--name', default='eff_22_fin_agecorr_org', type=str)
+    args.add_argument('-n', '--name', default='eff_22_fin_age_gen_corr', type=str)
 
     config = ConfigParser.from_args(args)
 
