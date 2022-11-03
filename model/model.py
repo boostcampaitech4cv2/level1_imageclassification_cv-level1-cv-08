@@ -29,15 +29,20 @@ class TorchVisionModel(nn.Module):
         x = self.model(x)
         return x
 
+
 class TimmModelMulti(nn.Module):
     def __init__(self, model_name="efficientnetv2_rw_s", pretrained=True):
         super().__init__()
         self.model = timm.create_model(model_name, pretrained=pretrained)
-        self.model.classifier = nn.Sequential(MultiClassFc(1792))
+
+        self.model.classifier = nn.Sequential(
+            MultiClassFc(self.model.classifier.in_features)
+        )
 
     def forward(self, x):
         mask, gender, age = self.model(x)
         return mask, gender, age
+
 
 class MultiClassFc(nn.Module):
     def __init__(self, backbone_dim):
@@ -54,5 +59,5 @@ class MultiClassFc(nn.Module):
 
     def make_out_layer(self, backbone_dim, num_class):
         return nn.Sequential(
-            nn.Linear(1792, num_class),
+            nn.Linear(backbone_dim, num_class),
         )
