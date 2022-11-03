@@ -20,7 +20,7 @@ def main(CONFIG):
         batch_size=CONFIG["data_loader"]["args"]["batch_size"],
         num_workers=CONFIG["data_loader"]["args"]["num_workers"],
     )
-    
+
     # build model architecture
     model = CONFIG.init_obj("arch", module_arch)
     logger.info(CONFIG["arch"]["args"]["model_name"])
@@ -50,7 +50,7 @@ def main(CONFIG):
         for data in progress:
             data = data.to(device)
             output = model(data)
-            pred = torch.argmax(output, dim=1)
+            pred = pred = get_mask(output) + get_gender(output) + get_age(output)
             preds.extend(pred.detach().cpu().numpy())
 
             #
@@ -69,6 +69,20 @@ def main(CONFIG):
     logger.info(f"Submit saved to {submit_path}")
 
 
+def get_age(output):
+    return torch.tensor(
+        [0 if x <= 1 else (1 if x <= 4 else 2) for x in torch.argmax(output[2], -1)]
+    ).cuda()
+
+
+def get_gender(output):
+    return torch.argmax(output[1], -1) * 3
+
+
+def get_mask(output):
+    return torch.argmax(output[0], -1) * 6
+
+
 if __name__ == "__main__":
     args = argparse.ArgumentParser(description="PyTorch Template")
     args.add_argument(
@@ -81,7 +95,7 @@ if __name__ == "__main__":
     args.add_argument(
         "-r",
         "--resume",
-        default="saved/models/Mask_base/10.29_21:05:55/last_epoch15.pth",
+        default="saved/models/Mask_base/11.03_01:41:05/best_epoch.pth",
         type=str,
         help="path to latest checkpoint (default: None)",
     )

@@ -29,6 +29,7 @@ class TorchVisionModel(nn.Module):
         x = self.model(x)
         return x
 
+
 class TimmModelMulti(nn.Module):
     def __init__(self, model_name="efficientnetv2_rw_s", pretrained=True):
         super().__init__()
@@ -38,6 +39,28 @@ class TimmModelMulti(nn.Module):
     def forward(self, x):
         mask, gender, age = self.model(x)
         return mask, gender, age
+
+
+class Vit_GH(nn.Module):
+    def __init__(self, model_name="vit_base_patch16_224", pretrained=True):
+        super().__init__()
+        self.Vit = timm.create_model(model_name, pretrained=pretrained)
+        self.is_train(self.Vit, False)
+        self.Vit.head = MultiClassFc(768)
+        self.layer_list = []
+
+    def forward(self, x):
+        mask_out, gender_out, age_out = self.Vit(x)
+        return mask_out, gender_out, age_out
+
+    def is_train(self, module, _train=True):
+        for m in module.parameters():
+            m.requires_grad_(_train)
+
+    def train_layer(self, epoch):
+        self.is_train(self.layer_list[(epoch - 1) % len(self.layer_list)], True)
+        self.is_train(self.layer_list[(epoch - 2) % len(self.layer_list)], False)
+
 
 class MultiClassFc(nn.Module):
     def __init__(self, backbone_dim):
@@ -54,5 +77,13 @@ class MultiClassFc(nn.Module):
 
     def make_out_layer(self, backbone_dim, num_class):
         return nn.Sequential(
-            nn.Linear(1792, num_class),
+            nn.Linear(backbone_dim, 256),
+            nn.BatchNorm1d(256),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+            nn.Linear(256, 64),
+            nn.BatchNorm1d(num_features=64),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+            nn.Linear(64, num_class),
         )
