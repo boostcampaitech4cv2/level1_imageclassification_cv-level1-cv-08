@@ -4,10 +4,6 @@ import torch
 from pytorch_metric_learning import losses
 
 
-def nll_loss(output, target):
-    return F.nll_loss(output, target)
-
-
 def multilabel_loss(outputs, target):
     loss_mask = nn.CrossEntropyLoss(weight=torch.tensor(([1.4, 7.0, 7.0]))).cuda()
     loss_gender = nn.CrossEntropyLoss(weight=torch.tensor(([1.6285, 2.5912]))).cuda()
@@ -25,16 +21,10 @@ def multilabel_loss(outputs, target):
     )
 
 
-def ce_loss(output, target):
-    return F.cross_entropy(output, target)
-
 
 def all_loss(loss_name, output, target):
-    if loss_name == "nll_loss":
-        return F.nll_loss(output, target)
-    elif loss_name == "ce_loss":
-        return F.cross_entropy(output, target)
-    elif loss_name == "multilabel_loss":
-        return multilabel_loss(output, target)
+    if loss_name == "ce_loss":
+        return F.cross_entropy(output, target, weight=inner_weight) * loss_weight
     else:
-        return getattr(losses, loss_name)()(output, target)
+        return getattr(all_loss, loss_name)()(output, target) * loss_weight
+

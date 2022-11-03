@@ -27,7 +27,12 @@
         }
     },
     "loss": "all_loss",
-    "loss_name": "TripletMarginLoss",
+    "loss_name": [
+        ["ce_loss" , [1.4, 7.0, 7.0], 0.375],
+        ["ce_loss" , [1.6285, 2.5912], 0.25],
+        ["ce_loss" , [2.8723, 3.9589, 4.5075, 14.0625, 14.0625, 28.4211], 0.375]
+    ],
+
     "metrics": [
         "accuracy",
         "f1"
