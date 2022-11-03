@@ -9,6 +9,9 @@ import data_loader.data_loaders as module_data
 import model.model as module_arch
 from parse_config import ConfigParser
 from utils import get_age, get_gender, get_mask
+from trainer.trainer import Trainer
+import model.loss as module_loss
+import model.metric as module_metric
 
 
 def main(CONFIG):
@@ -47,10 +50,19 @@ def main(CONFIG):
         ncols="80%",
         dynamic_ncols=True,
     )
+    criterion = getattr(module_loss, CONFIG["loss"])
+    metric_ftns = [getattr(module_metric, met) for met in CONFIG["metrics"]]
+    trainable_params = filter(lambda p: p.requires_grad, model.parameters())
+    optimizer = CONFIG.init_obj("optimizer", torch.optim, trainable_params)
+    trainer = Trainer(
+        model, criterion, metric_ftns, optimizer, config, device, data_loader
+    )
+
     with torch.no_grad():
-        for data in progress:
+        for data,original_size in progress:
             data = data.to(device)
-            output = model(data)
+            faces = trainer.setup_face(data=data, original_size=original_size)            
+            output = model(faces)
             # output[0]: mask, output[1]: gender, output[2]: age
             pred = get_mask(output) + get_gender(output) + get_age(output, device)
             preds.extend(pred.detach().cpu().numpy())

@@ -71,6 +71,7 @@ def main(CONFIG):
             + str(CONFIG["data_loader"]["args"]["batch_size"])
             + "_"
             + str(CONFIG["lr_scheduler"]["type"])
+            + "_tracer"
         )
         wandb.run.save()
         # save data augmentation
