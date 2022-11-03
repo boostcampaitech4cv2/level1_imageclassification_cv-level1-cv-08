@@ -79,6 +79,6 @@
     },
     "wandb": true,
     "visualize": false,
-    "submit_dir": "/opt/ml/level1/submit",
+    "submit_dir": "/opt/ml/base/submit",
     "info_dir": "/opt/ml/input/data/eval"
 }

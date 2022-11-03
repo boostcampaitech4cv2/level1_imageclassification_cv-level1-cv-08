@@ -59,9 +59,9 @@ def main(CONFIG):
     )
 
     with torch.no_grad():
-        for data,original_size in progress:
+        for data, original_size in progress:
             data = data.to(device)
-            faces = trainer.setup_face(data=data, original_size=original_size)            
+            faces = trainer.setup_face(data=data, original_size=original_size)
             output = model(faces)
             # output[0]: mask, output[1]: gender, output[2]: age
             pred = get_mask(output) + get_gender(output) + get_age(output, device)
@@ -77,7 +77,7 @@ def main(CONFIG):
     submit["ans"] = preds
 
     now = datetime.now().strftime(r"%m.%d_%H:%M:%S")
-    submit_path = os.path.join(CONFIG["submit_dir"], f"{now}.csv")
+    submit_path = os.path.join(CONFIG["submit_dir"], f"TRACER_{now}.csv")
     submit.to_csv(submit_path, index=False)
 
     logger.info(f"Submit saved to {submit_path}")
@@ -95,7 +95,7 @@ if __name__ == "__main__":
     args.add_argument(
         "-r",
         "--resume",
-        default=None,
+        default="saved/models/Mask_base/11.03_17:18:35/best_epoch.pth",
         type=str,
         help="path to latest checkpoint (default: None)",
     )
