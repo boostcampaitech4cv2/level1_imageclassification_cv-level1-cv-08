@@ -9,6 +9,8 @@ import data_loader.data_loaders as module_data
 import model.model as module_arch
 from parse_config import ConfigParser
 from utils import get_age, get_gender, get_mask
+import ttach as tta
+from data_loader.transform import train_transform, test_transform
 
 
 def main(CONFIG):
@@ -47,17 +49,50 @@ def main(CONFIG):
         ncols="80%",
         dynamic_ncols=True,
     )
+
+    tta_transforms = tta.Compose(
+        [
+            tta.HorizontalFlip(),
+            tta.Rotate90(angles=[0, 180]),
+        ]
+    )
+    # t_transforms = train_transform(224)
+    tta_model = tta.ClassificationTTAWrapper(model, tta_transforms).to(device)
+
+    tta_model.eval()
+
     with torch.no_grad():
         for data in progress:
             data = data.to(device)
-            output = model(data)
-            # output[0]: mask, output[1]: gender, output[2]: age
+            output = tta_model(data)
             pred = get_mask(output) + get_gender(output) + get_age(output, device)
             preds.extend(pred.detach().cpu().numpy())
 
-            #
-            # save sample images, or do something with output here
-            #
+    # with torch.no_grad():
+    #     for data in progress:
+    #         data = data.to(device)  # image, label - age,gender,mask
+    #         output = model(data)
+    #         output = tta_model(data)
+
+    #         # for transformer in tta_transforms:
+
+    #         #     # augment image
+    #         #     augmented_image = transformer.augment_image(data)
+
+    #         #     # pass to model
+    #         #     model_output = model(augmented_image, data)
+
+    #         #     # reverse augmentation for mask and label
+    #         #     deaug_mask = transformer.deaugment_mask(model_output['mask'])
+    #         #     deaug_label = transformer.deaugment_label(model_output['label'])
+
+    #         # output[0]: mask, output[1]: gender, output[2]: age
+    #         pred = get_mask(output) + get_gender(output) + get_age(output, device)
+    #         preds.extend(pred.detach().cpu().numpy())
+
+    #         #
+    #         # save sample images, or do something with output here
+    #         #
     logger.info("Testing done.")
 
     info_path = os.path.join(CONFIG["info_dir"], "info.csv")
@@ -83,7 +118,7 @@ if __name__ == "__main__":
     args.add_argument(
         "-r",
         "--resume",
-        default=None,
+        default="saved/models/Mask_base/11.03_01:47:43/best_epoch.pth",
         type=str,
         help="path to latest checkpoint (default: None)",
     )
