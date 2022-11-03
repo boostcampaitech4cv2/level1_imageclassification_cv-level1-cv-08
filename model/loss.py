@@ -28,8 +28,8 @@ def all_loss(loss_name, output, target, inner_weight, loss_weight):
         return F.cross_entropy(output, target, weight=inner_weight) * loss_weight
     elif loss_name == "focal":
         return create_criterion("focal")(output, target) * loss_weight
-    elif loss_name == "LabelSmoothingLoss":
-        return create_criterion("LabelSmoothingLoss")(output, target) * loss_weight
+    elif loss_name == "label_smoothing":
+        return create_criterion("label_smoothing")(output, target) * loss_weight
     elif loss_name == "f1":
         return create_criterion("f1")(output, target) * loss_weight
     else:
