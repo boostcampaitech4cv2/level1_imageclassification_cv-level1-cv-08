@@ -47,15 +47,24 @@ class Vit_GH(nn.Module):
         self.Vit = timm.create_model(model_name, pretrained=pretrained)
         self.is_train(self.Vit, False)
         self.Vit.head = MultiClassFc(768)
-        self.layer_list = []
+        self.layer_list = [
+            self.Vit.head,
+            *[self.Vit.blocks[::-1]],
+            self.Vit.patch_embed,
+        ]
 
     def forward(self, x):
         mask_out, gender_out, age_out = self.Vit(x)
         return mask_out, gender_out, age_out
 
     def is_train(self, module, _train=True):
-        for m in module.parameters():
-            m.requires_grad_(_train)
+        if isinstance(module, list):
+            for mod in module:
+                for m in mod.parameters():
+                    m.requires_grad_(_train)
+        else:
+            for m in module.parameters():
+                m.requires_grad_(_train)
 
     def train_layer(self, epoch):
         self.is_train(self.layer_list[(epoch - 1) % len(self.layer_list)], True)

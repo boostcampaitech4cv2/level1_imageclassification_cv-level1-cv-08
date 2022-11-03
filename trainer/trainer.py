@@ -54,6 +54,14 @@ class Trainer(BaseTrainer):
         :param epoch: Integer, current training epoch.
         :return: A log that contains average loss and metric in this epoch.
         """
+        if self.model.layer_list:
+            self.model.train_layer(epoch)
+            trainable_params = filter(
+                lambda p: p.requires_grad, self.model.parameters()
+            )
+            self.optimizer = self.config.init_obj(
+                "optimizer", torch.optim, trainable_params
+            )
         self.model.train()
         progress = tqdm(
             self.data_loader,
