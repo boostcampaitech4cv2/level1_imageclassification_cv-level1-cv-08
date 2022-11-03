@@ -77,7 +77,9 @@ class Trainer(BaseTrainer):
             self.optimizer.zero_grad()
             outputs = self.model(data)
             # output[0]: mask, output[1]: gender, output[2]: age
-            pred = get_mask(outputs) + get_gender(outputs) + get_age(outputs)
+            pred = (
+                get_mask(outputs) + get_gender(outputs) + get_age(outputs, self.device)
+            )
 
             # if you don't need inner_weight, please set null in config.json.
             loss_list = [
@@ -159,7 +161,11 @@ class Trainer(BaseTrainer):
                 feature_labels = [mask, gender, age]
                 outputs = self.model(data)
                 # output[0]: mask, output[1]: gender, output[2]: age
-                pred = get_mask(outputs) + get_gender(outputs) + get_age(outputs)
+                pred = (
+                    get_mask(outputs)
+                    + get_gender(outputs)
+                    + get_age(outputs, self.device)
+                )
 
                 loss_list = [
                     self.criterion(name, output, feature, inner_weight, loss_weight)
