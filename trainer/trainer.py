@@ -193,9 +193,9 @@ class Trainer(BaseTrainer):
 
                 loss = sum(loss_list)
                 self.valid_metrics.update("loss", loss.item())
-                self.train_metrics.update("mask_loss", mask_loss.item())
-                self.train_metrics.update("gender_loss", gender_loss.item())
-                self.train_metrics.update("age_loss", age_loss.item())
+                self.valid_metrics.update("mask_loss", mask_loss.item())
+                self.valid_metrics.update("gender_loss", gender_loss.item())
+                self.valid_metrics.update("age_loss", age_loss.item())
                 for met in self.metric_ftns:
                     self.valid_metrics.update(met.__name__, (v := met(pred, target)))
                     if met.__name__ == "f1":
