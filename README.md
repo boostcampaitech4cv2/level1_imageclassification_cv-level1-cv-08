@@ -6,7 +6,6 @@
 * [Procedures](#procedures)
 * [Features](#features)
 * [Result](#result)
-* [Review](#review)
 * [Conclusion](#Conclusion)
 ## Project Summary
 
