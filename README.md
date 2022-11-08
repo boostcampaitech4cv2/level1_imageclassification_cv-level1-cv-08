@@ -114,9 +114,9 @@ Base코드 선정일(10.26)까지 Base코드를 미완성하거나 추가 실험
 - Multi-Label 문제를 해결하기 위하여 각각의 Class에 대하여 Cross-entropy Loss를 설정하여 더하는 방식으로 설정하였고 추가로 Data Imbalance를 고려하여 Loss에 Weight를 추가.
 
 #### 시연 결과
-<img width="50%" src="./images/loss.png"/>    
-<img width="50%" src="./images/accuracy.png"/>  
-<img width="50%" src="./images/f1score.png"/>  
+|<img width="100%" src="/images/wandb_loss.png"/>|<img width="100%" src="/images/wandb_accuracy.png"/>|<img width="100%" src="/images/wandb_f1score.png"/>|
+|----|----|----|
+
 |Submit/F1 Score|Submit/Accuracy|
 |----|----|
 |<div style="text-align: center">0.7040</div>|<div style="text-align: center">75.0635</div>|
