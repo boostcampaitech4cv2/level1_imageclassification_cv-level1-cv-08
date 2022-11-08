@@ -7,14 +7,18 @@ import cv2
 from sklearn.model_selection import train_test_split
 import pandas as pd
 import os
+import albumentations as A
+from albumentations.core.composition import Compose
+from albumentations.pytorch import ToTensorV2
 
 from data_loader.transform import train_transform, test_transform
 
 
 class CustomDataset(Dataset):
-    def __init__(self, dataset, test=False, transform=None):
+    def __init__(self, dataset, test=False, transform=None,tracer_transform=None):
         self.pair_list = dataset
         self.transform = transform
+        self.tracer_transform = tracer_transform
         self.test = test
 
     def __len__(self):
@@ -25,10 +29,17 @@ class CustomDataset(Dataset):
         image = cv2.imread(pair) if self.test else cv2.imread(pair[0])
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-        if self.transform:
+        original_size = image.shape[:2]
+        if self.tracer_transform:
+            image = self.tracer_transform(image=image)
+        elif self.transform:
             image = self.transform(image=image)
 
-        return image["image"] if self.test else (image["image"], pair[1])
+        return (
+            (image["image"], original_size)
+            if self.test
+            else (image["image"], original_size, pair[1])
+        )
 
 
 def prepare_dataset(files):
@@ -108,12 +119,13 @@ def setup(
     batch_size=32,
     num_workers=4,
 ):
+    tracer_transform = Compose([A.Resize(352, 352), A.Normalize(), ToTensorV2()])
 
     if stage == "train":
         print("train dataset loading")
         train_set, valid_set = make_dataset(stage)
 
-        train_set = CustomDataset(train_set, transform=train_transform(input_size))
+        train_set = CustomDataset(train_set, transform=train_transform(input_size),tracer_transform=tracer_transform)
         valid_set = CustomDataset(valid_set, transform=test_transform(input_size))
 
         train_dataloader = DataLoader(
@@ -137,7 +149,7 @@ def setup(
         print("eval dataset loading")
         test_set = make_dataset(stage)
         test_set = CustomDataset(
-            test_set, test=True, transform=test_transform(input_size)
+            test_set, test=True, transform=test_transform(input_size),tracer_transform=tracer_transform
         )
         return DataLoader(
             test_set,
