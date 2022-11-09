@@ -66,7 +66,7 @@ Base코드 선정일(10.26)까지 Base코드를 미완성하거나 추가 실험
 *개인별 주요 실험 전략*
 - 김범준(Loss,Optimizer,Augmentation), 
 - 김주희(Loss, Augmentation), 
-- 박민규(), 
+- 박민규((별도진행) kfold), 
 - 오주헌(TRACER), 
 - 허건혁(CLIP model)
 
