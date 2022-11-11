@@ -93,7 +93,7 @@ Base코드 선정일(10.26)까지 Base코드를 미완성하거나 추가 실험
 
 **feat-yml** : pytorch metric learning의 loss 추가
 
-**feat-streamlit** : streamlit demo 
+**feat-strmlit** : streamlit demo 
 
 ***
 ## Result
