@@ -3,6 +3,7 @@ from PIL import Image
 from typing import Tuple
 import streamlit as st
 import torch
+import yaml
 from model.model import TimmModelMulti
 from utils.util import get_age, get_gender, get_mask
 from data_loader.transform import streamlit_transform
