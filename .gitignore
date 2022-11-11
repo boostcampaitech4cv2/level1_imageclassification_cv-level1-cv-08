@@ -239,7 +239,6 @@ requirements.txt
 /saved
 /submit
 *.csv
-*.yaml
 /wandb
 .vscode
 config.json
