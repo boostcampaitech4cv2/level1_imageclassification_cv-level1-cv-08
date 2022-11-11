@@ -15,7 +15,7 @@
 * [Conclusion](#Conclusion)  
 ***
 ## Demo Video
-<img width="100%" src="/images/streamlit_demo.gif"/>
+<img width="60%" src="/images/streamlit_demo.gif"/>
   
 
 ***
