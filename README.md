@@ -308,7 +308,7 @@ Modify `config.json` by your setting:
 Run and Check your Mask Classification Prediction result:
 
 ```
-streamlit run app.py --server.port=""Your Port Number"
+streamlit run app.py --server.port="Your Port Number"
 ```
 
 ## License
