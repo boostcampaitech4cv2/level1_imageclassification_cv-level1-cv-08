@@ -1,17 +1,23 @@
 # BoostCamp AI Tech4 level-1-Mask Detection Project
-
+***
 ## Member🔥
 | [김범준](https://github.com/quasar529) | [김주희](https://github.com/alias26) | [박민규](https://github.com/zergswim) | [오주헌](https://github.com/OZOOOOOH) | [허건혁](https://github.com/GeonHyeock) |
 | :-: | :-: | :-: | :-: | :-: |
 | <img src="https://avatars.githubusercontent.com/quasar529" width="100"> | <img src="https://avatars.githubusercontent.com/alias26" width="100"> | <img src="https://avatars.githubusercontent.com/zergswim" width="100"> | <img src="https://avatars.githubusercontent.com/OZOOOOOH" width="100"> | <img src="https://avatars.githubusercontent.com/GeonHyeock" width="100"> |
 ***
 ## Index
+* [Demo Video](#demo-video)
 * [Project Summary](#project-summary)
 * [Requirements](#requirements)
 * [Procedures](#procedures)
 * [Features](#features)
 * [Result](#result)
 * [Conclusion](#Conclusion)  
+***
+## Demo Video
+<img width="100%" src="/images/streamlit_demo.gif"/>
+  
+
 ***
 ## Project Summary
 
@@ -290,14 +296,20 @@ Config files are in `.json` format:
 **Add addional configurations if you need.**
 
 ### Train, Test using config files
-Modify the configurations in `.json` config files, then run:
+Modify `config.json` by your setting:
 
   ```
   python train.py --config config.json
   
-  python test.py --config config.json --resume "your_checkpoint_path"
+  python test.py --config config.json --resume "Your Checkpoint Path"
   ```
 
+### Streamlit Prediction
+Run and Check your Mask Classification Prediction result:
+
+```
+streamlit run app.py --server.port=""Your Port Number"
+```
 
 ## License
 [This project is licensed under the MIT License. See  LICENSE for more details](https://github.com/victoresque/pytorch-template)
