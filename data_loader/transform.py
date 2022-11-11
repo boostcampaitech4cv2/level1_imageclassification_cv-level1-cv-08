@@ -1,6 +1,10 @@
 import albumentations as A
 from albumentations.core.composition import Compose
 from albumentations.pytorch import ToTensorV2
+import torch
+import io
+from PIL import Image
+import numpy as np
 
 
 def train_transform(input_size):
@@ -42,3 +46,17 @@ def test_transform(input_size):
             ToTensorV2(),
         ]
     )
+
+
+def streamlit_transform(image_bytes: bytes) -> torch.Tensor:
+    transform = Compose(
+        [
+            A.Resize(height=224, width=224),
+            A.Normalize(),
+            ToTensorV2(),
+        ]
+    )
+    image = Image.open(io.BytesIO(image_bytes))
+    image = image.convert("RGB")
+    image_array = np.array(image)
+    return transform(image=image_array)["image"].unsqueeze(0)
